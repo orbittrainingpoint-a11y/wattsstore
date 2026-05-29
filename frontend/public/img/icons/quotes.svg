@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Quotes">
+  <circle cx="24" cy="24" r="22" fill="#eef3fa"/>
+  <rect x="13" y="11" width="22" height="28" rx="3" fill="#ffffff" stroke="#1e4d8c" stroke-width="2"/>
+  <rect x="13" y="11" width="22" height="6" fill="#1e4d8c"/>
+  <rect x="17" y="22" width="14" height="2" rx="1" fill="#1e4d8c"/>
+  <rect x="17" y="26" width="10" height="2" rx="1" fill="#1e4d8c"/>
+  <rect x="17" y="30" width="14" height="2" rx="1" fill="#ffd83a"/>
+  <rect x="17" y="34" width="8" height="2" rx="1" fill="#ffd83a"/>
+</svg>

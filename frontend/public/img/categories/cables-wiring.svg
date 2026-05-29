@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Cables and wiring">
+  <defs>
+    <linearGradient id="cw-bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="18" fill="url(#cw-bg)"/>
+  <!-- Spool body -->
+  <ellipse cx="100" cy="100" rx="60" ry="58" fill="#1e4d8c"/>
+  <ellipse cx="100" cy="100" rx="55" ry="54" fill="#163c6e"/>
+  <!-- Wound cable rings -->
+  <g fill="none" stroke="#0b1f3d" stroke-width="3">
+    <circle cx="100" cy="100" r="48"/>
+    <circle cx="100" cy="100" r="40"/>
+    <circle cx="100" cy="100" r="32"/>
+    <circle cx="100" cy="100" r="24"/>
+  </g>
+  <!-- Cable strand colored -->
+  <path d="M100 52 A48 48 0 0 1 148 100 L148 92 A40 40 0 0 0 108 60 L108 52 Z" fill="#ffd83a"/>
+  <!-- Center hub -->
+  <circle cx="100" cy="100" r="14" fill="#fff"/>
+  <circle cx="100" cy="100" r="6" fill="#0b1f3d"/>
+  <!-- Cable exit -->
+  <path d="M160 100 Q180 90 192 110" stroke="#ef4444" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M160 100 Q180 95 192 115" stroke="#0b1f3d" stroke-width="6" fill="none" stroke-linecap="round"/>
+</svg>

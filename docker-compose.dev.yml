@@ -1,0 +1,51 @@
+# WattsStore — Local development infrastructure.
+# Production runs bare-metal (no Docker) per the TSD; this is dev-only.
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: wattsstore-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wattsstore
+      POSTGRES_PASSWORD: wattsstore_dev_pw
+      POSTGRES_DB: wattsstore_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wattsstore -d wattsstore_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: wattsstore-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+  minio:
+    image: minio/minio:latest
+    container_name: wattsstore-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: wattsstore
+      MINIO_ROOT_PASSWORD: wattsstore_dev_pw
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    volumes:
+      - miniodata:/data
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:

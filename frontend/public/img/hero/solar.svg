@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="Solar hero scene">
+  <defs>
+    <linearGradient id="h2-panel" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#1e3a5c"/>
+      <stop offset="100%" stop-color="#0b1f3d"/>
+    </linearGradient>
+    <radialGradient id="h2-sun" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#ffe066"/>
+      <stop offset="100%" stop-color="#ffd83a" stop-opacity="0.4"/>
+    </radialGradient>
+  </defs>
+  <!-- Sun + rays -->
+  <circle cx="440" cy="180" r="100" fill="url(#h2-sun)"/>
+  <g stroke="#ffd83a" stroke-width="6" stroke-linecap="round" opacity="0.7">
+    <line x1="440" y1="40" x2="440" y2="70"/>
+    <line x1="530" y1="70" x2="510" y2="100"/>
+    <line x1="570" y1="180" x2="540" y2="180"/>
+    <line x1="530" y1="290" x2="510" y2="260"/>
+    <line x1="340" y1="70" x2="360" y2="100"/>
+  </g>
+  <!-- Array of solar panels (2 rows x 2 panels) -->
+  <g transform="translate(60 280) skewX(-12)">
+    <rect width="240" height="120" fill="url(#h2-panel)" stroke="#0b1f3d" stroke-width="3"/>
+    <g stroke="#4cc9f0" stroke-opacity="0.35" stroke-width="1.5">
+      <line x1="80"  y1="0" x2="80"  y2="120"/>
+      <line x1="160" y1="0" x2="160" y2="120"/>
+      <line x1="0" y1="60" x2="240" y2="60"/>
+    </g>
+  </g>
+  <g transform="translate(320 280) skewX(-12)">
+    <rect width="240" height="120" fill="url(#h2-panel)" stroke="#0b1f3d" stroke-width="3"/>
+    <g stroke="#4cc9f0" stroke-opacity="0.35" stroke-width="1.5">
+      <line x1="80"  y1="0" x2="80"  y2="120"/>
+      <line x1="160" y1="0" x2="160" y2="120"/>
+      <line x1="0" y1="60" x2="240" y2="60"/>
+    </g>
+  </g>
+  <g transform="translate(80 420) skewX(-12)">
+    <rect width="220" height="100" fill="url(#h2-panel)" stroke="#0b1f3d" stroke-width="2"/>
+    <g stroke="#4cc9f0" stroke-opacity="0.3">
+      <line x1="73"  y1="0" x2="73"  y2="100"/>
+      <line x1="146" y1="0" x2="146" y2="100"/>
+      <line x1="0" y1="50" x2="220" y2="50"/>
+    </g>
+  </g>
+  <g transform="translate(320 420) skewX(-12)">
+    <rect width="220" height="100" fill="url(#h2-panel)" stroke="#0b1f3d" stroke-width="2"/>
+    <g stroke="#4cc9f0" stroke-opacity="0.3">
+      <line x1="73"  y1="0" x2="73"  y2="100"/>
+      <line x1="146" y1="0" x2="146" y2="100"/>
+      <line x1="0" y1="50" x2="220" y2="50"/>
+    </g>
+  </g>
+  <!-- Mount feet -->
+  <g fill="#0b1f3d">
+    <rect x="80" y="538" width="8" height="40"/>
+    <rect x="290" y="538" width="8" height="40"/>
+    <rect x="340" y="538" width="8" height="40"/>
+    <rect x="540" y="538" width="8" height="40"/>
+  </g>
+</svg>

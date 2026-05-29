@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Secure payments">
+  <circle cx="24" cy="24" r="22" fill="#eef3fa"/>
+  <rect x="14" y="22" width="20" height="16" rx="3" fill="#1e4d8c"/>
+  <path d="M18 22 L18 16 C18 13 21 10 24 10 C27 10 30 13 30 16 L30 22" stroke="#1e4d8c" stroke-width="3" fill="none"/>
+  <circle cx="24" cy="30" r="2.5" fill="#ffd83a"/>
+  <rect x="23" y="30" width="2" height="5" fill="#ffd83a"/>
+</svg>

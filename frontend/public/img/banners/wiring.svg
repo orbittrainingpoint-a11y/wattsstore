@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" role="img">
+  <defs>
+    <linearGradient id="bw" x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stop-color="#231a4d"/><stop offset="100%" stop-color="#6e5cff"/></linearGradient>
+  </defs>
+  <rect width="800" height="480" fill="url(#bw)"/>
+  <g transform="translate(560 200)">
+    <rect x="-90" y="-70" width="180" height="140" rx="6" fill="#1e4d8c"/>
+    <circle cx="-90" cy="-40" r="10" fill="#0b1f3d"/>
+    <circle cx="-90" cy="40" r="10" fill="#0b1f3d"/>
+    <circle cx="90" cy="-40" r="10" fill="#0b1f3d"/>
+    <circle cx="90" cy="40" r="10" fill="#0b1f3d"/>
+  </g>
+  <!-- Wires -->
+  <path d="M0 200 Q200 200 460 160" stroke="#ffd83a" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <path d="M0 240 Q200 240 460 240" stroke="#ef4444" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <path d="M0 280 Q200 280 460 320" stroke="#10b981" stroke-width="10" fill="none" stroke-linecap="round"/>
+</svg>

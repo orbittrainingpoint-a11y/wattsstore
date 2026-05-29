@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="Industrial hero scene">
+  <defs>
+    <radialGradient id="h1-glow" cx="0.5" cy="0.4" r="0.55">
+      <stop offset="0%" stop-color="#ffd83a" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#ffd83a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- backdrop scaffold -->
+  <g stroke="#4cc9f0" stroke-opacity="0.18" stroke-width="2">
+    <line x1="60" y1="60" x2="60" y2="540"/>
+    <line x1="540" y1="60" x2="540" y2="540"/>
+    <line x1="60" y1="60" x2="540" y2="60"/>
+    <line x1="60" y1="540" x2="540" y2="540"/>
+    <line x1="60" y1="180" x2="540" y2="180"/>
+    <line x1="60" y1="300" x2="540" y2="300"/>
+    <line x1="60" y1="420" x2="540" y2="420"/>
+  </g>
+  <circle cx="300" cy="260" r="220" fill="url(#h1-glow)"/>
+  <!-- Big luminaire -->
+  <g transform="translate(300 260)">
+    <rect x="-160" y="-100" width="320" height="180" rx="14" fill="#1e4d8c"/>
+    <rect x="-145" y="-85" width="290" height="150" rx="8" fill="#0b1f3d"/>
+    <g fill="#ffd83a">
+      <circle cx="-100" cy="-50" r="10"/>
+      <circle cx="-60"  cy="-50" r="10"/>
+      <circle cx="-20"  cy="-50" r="10"/>
+      <circle cx="20"   cy="-50" r="10"/>
+      <circle cx="60"   cy="-50" r="10"/>
+      <circle cx="100"  cy="-50" r="10"/>
+      <circle cx="-100" cy="-10" r="10"/>
+      <circle cx="-60"  cy="-10" r="10"/>
+      <circle cx="-20"  cy="-10" r="10"/>
+      <circle cx="20"   cy="-10" r="10"/>
+      <circle cx="60"   cy="-10" r="10"/>
+      <circle cx="100"  cy="-10" r="10"/>
+      <circle cx="-100" cy="30" r="10"/>
+      <circle cx="-60"  cy="30" r="10"/>
+      <circle cx="-20"  cy="30" r="10"/>
+      <circle cx="20"   cy="30" r="10"/>
+      <circle cx="60"   cy="30" r="10"/>
+      <circle cx="100"  cy="30" r="10"/>
+    </g>
+    <!-- mount -->
+    <rect x="-30" y="80" width="60" height="20" fill="#0b1f3d"/>
+    <rect x="-12" y="100" width="24" height="60" fill="#0b1f3d"/>
+    <!-- beam cone -->
+    <path d="M-170 90 L-260 380 L260 380 L170 90 Z" fill="#ffd83a" fill-opacity="0.20"/>
+    <path d="M-130 90 L-180 380 L180 380 L130 90 Z" fill="#fffbe5" fill-opacity="0.25"/>
+  </g>
+  <!-- specks -->
+  <g fill="#fffbe5">
+    <circle cx="120" cy="500" r="3"/>
+    <circle cx="200" cy="540" r="2"/>
+    <circle cx="400" cy="520" r="3"/>
+    <circle cx="480" cy="500" r="2"/>
+  </g>
+</svg>

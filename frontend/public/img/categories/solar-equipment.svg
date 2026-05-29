@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Solar equipment">
+  <defs>
+    <linearGradient id="se-bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#fff7e0"/>
+      <stop offset="100%" stop-color="#ffe0a3"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#1e3a5c"/>
+      <stop offset="100%" stop-color="#0b1f3d"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="18" fill="url(#se-bg)"/>
+  <!-- Sun -->
+  <circle cx="155" cy="50" r="22" fill="#ffd83a"/>
+  <g stroke="#ffd83a" stroke-width="3" stroke-linecap="round">
+    <line x1="155" y1="14" x2="155" y2="22"/>
+    <line x1="180" y1="20" x2="174" y2="28"/>
+    <line x1="190" y1="50" x2="182" y2="50"/>
+    <line x1="180" y1="80" x2="174" y2="72"/>
+    <line x1="130" y1="20" x2="136" y2="28"/>
+  </g>
+  <!-- Panel array (3x2 cells per panel, 2 panels) -->
+  <g transform="translate(30 80) skewX(-12)">
+    <rect x="0" y="0" width="78" height="56" fill="url(#panel)" stroke="#0b1f3d"/>
+    <line x1="26" y1="0" x2="26" y2="56" stroke="#4cc9f0" stroke-opacity="0.4"/>
+    <line x1="52" y1="0" x2="52" y2="56" stroke="#4cc9f0" stroke-opacity="0.4"/>
+    <line x1="0" y1="28" x2="78" y2="28" stroke="#4cc9f0" stroke-opacity="0.4"/>
+  </g>
+  <g transform="translate(120 80) skewX(-12)">
+    <rect x="0" y="0" width="78" height="56" fill="url(#panel)" stroke="#0b1f3d"/>
+    <line x1="26" y1="0" x2="26" y2="56" stroke="#4cc9f0" stroke-opacity="0.4"/>
+    <line x1="52" y1="0" x2="52" y2="56" stroke="#4cc9f0" stroke-opacity="0.4"/>
+    <line x1="0" y1="28" x2="78" y2="28" stroke="#4cc9f0" stroke-opacity="0.4"/>
+  </g>
+  <!-- Mounting feet -->
+  <rect x="40" y="155" width="6" height="20" fill="#0b1f3d"/>
+  <rect x="90" y="155" width="6" height="20" fill="#0b1f3d"/>
+  <rect x="135" y="155" width="6" height="20" fill="#0b1f3d"/>
+  <rect x="178" y="155" width="6" height="20" fill="#0b1f3d"/>
+</svg>

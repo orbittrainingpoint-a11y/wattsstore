@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="B2B invoice & quote hero scene">
+  <defs>
+    <linearGradient id="h3-doc" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+  </defs>
+  <!-- Doc 3 (back) -->
+  <g transform="translate(150 80) rotate(-6)">
+    <rect width="260" height="360" rx="10" fill="url(#h3-doc)" stroke="#cbd5e1" stroke-width="2"/>
+  </g>
+  <!-- Doc 2 (mid) -->
+  <g transform="translate(180 120) rotate(2)">
+    <rect width="260" height="360" rx="10" fill="url(#h3-doc)" stroke="#cbd5e1" stroke-width="2"/>
+  </g>
+  <!-- Doc 1 (front) -->
+  <g transform="translate(170 170)">
+    <rect width="280" height="380" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+    <!-- header bar -->
+    <rect x="0" y="0" width="280" height="56" rx="10" fill="#1e4d8c"/>
+    <rect x="0" y="40" width="280" height="16" fill="#1e4d8c"/>
+    <text x="20" y="34" font-family="Arial" font-size="14" font-weight="bold" fill="#ffd83a">WATTSSTORE · QUOTE</text>
+    <text x="20" y="80" font-family="Arial" font-size="10" fill="#4a5568">REFERENCE</text>
+    <text x="20" y="98" font-family="Arial" font-size="13" font-weight="bold" fill="#1e4d8c">WS-RFQ-AE-000312</text>
+    <!-- table rows -->
+    <g>
+      <line x1="20" y1="124" x2="260" y2="124" stroke="#e5e7eb"/>
+      <line x1="20" y1="154" x2="260" y2="154" stroke="#e5e7eb"/>
+      <line x1="20" y1="184" x2="260" y2="184" stroke="#e5e7eb"/>
+      <line x1="20" y1="214" x2="260" y2="214" stroke="#e5e7eb"/>
+      <rect x="20" y="132" width="120" height="8" rx="2" fill="#cbd5e1"/>
+      <rect x="20" y="162" width="160" height="8" rx="2" fill="#cbd5e1"/>
+      <rect x="20" y="192" width="110" height="8" rx="2" fill="#cbd5e1"/>
+      <rect x="200" y="132" width="44" height="8" rx="2" fill="#1e4d8c"/>
+      <rect x="200" y="162" width="44" height="8" rx="2" fill="#1e4d8c"/>
+      <rect x="200" y="192" width="44" height="8" rx="2" fill="#1e4d8c"/>
+    </g>
+    <!-- total -->
+    <rect x="20" y="240" width="240" height="50" rx="6" fill="#fff7d6"/>
+    <text x="32" y="270" font-family="Arial" font-size="11" font-weight="bold" fill="#0b1f3d">TOTAL</text>
+    <text x="248" y="272" font-family="Arial" font-size="16" font-weight="900" fill="#1e4d8c" text-anchor="end">AED 113,250</text>
+    <!-- footer -->
+    <rect x="20" y="320" width="80" height="10" rx="2" fill="#10b981"/>
+    <rect x="20" y="338" width="160" height="6" rx="2" fill="#cbd5e1"/>
+    <rect x="20" y="350" width="120" height="6" rx="2" fill="#cbd5e1"/>
+    <!-- stamp -->
+    <g transform="translate(220 320) rotate(-12)">
+      <circle r="34" fill="none" stroke="#ef4444" stroke-width="3"/>
+      <text y="4" font-family="Arial" font-size="11" font-weight="bold" fill="#ef4444" text-anchor="middle">APPROVED</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment / secrets — NEVER commit
+.env
+.env.local
+.env.*.local
+*.pem
+
+# Build output
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Prisma
+api/prisma/*.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Uploads / runtime
+uploads/
+tmp/
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+
+# Source spec documents (kept locally, not in repo)
+docs/*.docx
+*.docx
+
+# Markdown documentation — kept locally, not in repo (per user request)
+*.md
+
+# Dev-tooling working dirs
+.dev-data/
+.dev-tools/
+
+# Static HTML wireframes used as reference only
+*.html

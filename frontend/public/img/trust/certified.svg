@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Certified products">
+  <circle cx="24" cy="24" r="22" fill="#eef3fa"/>
+  <circle cx="24" cy="20" r="10" fill="#ffd83a"/>
+  <text x="24" y="23" font-family="Arial" font-size="9" font-weight="900" fill="#0b1f3d" text-anchor="middle">CE</text>
+  <path d="M16 24 L12 40 L18 36 L24 40 L30 36 L36 40 L32 24" fill="#1e4d8c"/>
+</svg>

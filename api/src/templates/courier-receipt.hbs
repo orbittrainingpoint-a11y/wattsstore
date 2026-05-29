@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { font-family: Arial, Helvetica, sans-serif; color: #1A202C; font-size: 12px; margin: 34px; }
+      .top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 4px solid #1E4D8C; padding-bottom: 16px; }
+      .brand { font-size: 26px; font-weight: bold; color: #1E4D8C; }
+      .brand span { color: #F5C400; }
+      .doc-title { margin: 0 0 8px; color: #1E4D8C; font-size: 24px; letter-spacing: 0.08em; }
+      .mono { font-family: 'Courier New', monospace; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 20px; }
+      .box { border: 1px solid #d9e2ef; border-radius: 10px; padding: 14px; background: #fbfdff; }
+      .label { color: #64748b; font-size: 10px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; }
+      h1 { font-size: 16px; margin: 8px 0; }
+      table.items { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      table.items th { background: #1E4D8C; color: #fff; text-align: left; padding: 8px; font-size: 11px; }
+      table.items td { border-bottom: 1px solid #e2e8f0; padding: 8px; }
+      .right { text-align: right; }
+      .barcode { margin-top: 14px; padding: 12px; border: 2px dashed #1E4D8C; border-radius: 8px; text-align: center; font-size: 18px; letter-spacing: 0.14em; }
+      .footer { margin-top: 28px; border-top: 1px solid #e2e8f0; padding-top: 12px; color: #4A5568; font-size: 11px; }
+    </style>
+  </head>
+  <body>
+    <div class="top">
+      <div>
+        <div class="brand">Watts<span>Store</span></div>
+        <div>{{company.name}}</div>
+        <div>{{company.address}}</div>
+        <div>TRN: {{company.trn}}</div>
+      </div>
+      <div class="right">
+        <h1 class="doc-title">COURIER RECEIPT</h1>
+        <div>Order <span class="mono">{{order.orderNumber}}</span></div>
+        <div>Date {{date issuedAt}}</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="box">
+        <div class="label">Ship To</div>
+        <h1>{{customer.name}}</h1>
+        {{#if customer.company}}<div>{{customer.company}}</div>{{/if}}
+        <div>{{customer.address1}}</div>
+        {{#if customer.address2}}<div>{{customer.address2}}</div>{{/if}}
+        <div>{{customer.city}}, {{customer.countryCode}}</div>
+        {{#if customer.phone}}<div>Phone: {{customer.phone}}</div>{{/if}}
+      </div>
+      <div class="box">
+        <div class="label">Courier</div>
+        <h1>{{shipment.carrier}}</h1>
+        <div>Tracking: <span class="mono">{{shipment.trackingNumber}}</span></div>
+        {{#if shipment.estimatedDelivery}}<div>ETA: {{date shipment.estimatedDelivery}}</div>{{/if}}
+        <div class="barcode">{{shipment.trackingNumber}}</div>
+      </div>
+    </div>
+
+    <table class="items">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>SKU</th>
+          <th>Qty</th>
+          {{#if showPrices}}<th class="right">Line Total</th>{{/if}}
+        </tr>
+      </thead>
+      <tbody>
+        {{#each items}}
+        <tr>
+          <td>{{this.title}}</td>
+          <td class="mono">{{this.sku}}</td>
+          <td>{{this.quantity}}</td>
+          {{#if ../showPrices}}<td class="right">{{money this.subtotal ../order.currencyCode}}</td>{{/if}}
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <div class="footer">
+      <p>{{receiptFooter}}</p>
+      <p>{{company.name}} &middot; {{company.address}}</p>
+    </div>
+  </body>
+</html>

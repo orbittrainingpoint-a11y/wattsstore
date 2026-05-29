@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Commercial lighting">
+  <defs>
+    <linearGradient id="cl-bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f5f9ff"/>
+      <stop offset="100%" stop-color="#dbeafe"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="18" fill="url(#cl-bg)"/>
+  <!-- Track rail -->
+  <rect x="30" y="44" width="140" height="6" rx="3" fill="#1e4d8c"/>
+  <!-- Spot 1 -->
+  <g transform="translate(60 50)">
+    <rect x="-6" y="0" width="12" height="14" fill="#0b1f3d"/>
+    <ellipse cx="0" cy="20" rx="14" ry="5" fill="#0b1f3d"/>
+    <ellipse cx="0" cy="18" rx="12" ry="3" fill="#ffd83a"/>
+    <path d="M-12 22 L-30 80 L30 80 L12 22 Z" fill="#ffd83a" fill-opacity="0.4"/>
+  </g>
+  <!-- Spot 2 -->
+  <g transform="translate(100 50)">
+    <rect x="-6" y="0" width="12" height="14" fill="#0b1f3d"/>
+    <ellipse cx="0" cy="20" rx="14" ry="5" fill="#0b1f3d"/>
+    <ellipse cx="0" cy="18" rx="12" ry="3" fill="#ffd83a"/>
+    <path d="M-12 22 L-30 100 L30 100 L12 22 Z" fill="#ffd83a" fill-opacity="0.35"/>
+  </g>
+  <!-- Spot 3 -->
+  <g transform="translate(140 50)">
+    <rect x="-6" y="0" width="12" height="14" fill="#0b1f3d"/>
+    <ellipse cx="0" cy="20" rx="14" ry="5" fill="#0b1f3d"/>
+    <ellipse cx="0" cy="18" rx="12" ry="3" fill="#ffd83a"/>
+    <path d="M-12 22 L-30 80 L30 80 L12 22 Z" fill="#ffd83a" fill-opacity="0.4"/>
+  </g>
+  <!-- Floor -->
+  <rect x="0" y="170" width="200" height="30" fill="#1e4d8c" fill-opacity="0.1"/>
+</svg>

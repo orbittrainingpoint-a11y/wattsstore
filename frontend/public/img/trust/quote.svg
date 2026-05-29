@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="B2B quotes">
+  <circle cx="24" cy="24" r="22" fill="#eef3fa"/>
+  <rect x="12" y="10" width="22" height="28" rx="2" fill="#fff" stroke="#1e4d8c" stroke-width="2"/>
+  <rect x="12" y="10" width="22" height="6" fill="#1e4d8c"/>
+  <rect x="16" y="20" width="14" height="2" fill="#1e4d8c"/>
+  <rect x="16" y="24" width="10" height="2" fill="#1e4d8c"/>
+  <rect x="16" y="28" width="14" height="2" fill="#ffd83a"/>
+  <rect x="16" y="32" width="8" height="2" fill="#ffd83a"/>
+</svg>

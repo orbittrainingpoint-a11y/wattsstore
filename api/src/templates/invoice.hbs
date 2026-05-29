@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { font-family: Arial, Helvetica, sans-serif; color: #1A202C; font-size: 12px; margin: 36px; }
+      .top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 4px solid #1E4D8C; padding-bottom: 16px; }
+      .brand { font-size: 26px; font-weight: bold; color: #1E4D8C; }
+      .brand span { color: #F5C400; }
+      h1 { font-size: 18px; margin: 24px 0 4px; }
+      .doc-title { margin: 0 0 8px; color: #1E4D8C; font-size: 24px; letter-spacing: 0.08em; }
+      .meta td { padding: 2px 8px 2px 0; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 22px; }
+      .box { border: 1px solid #d9e2ef; border-radius: 10px; padding: 14px; background: #fbfdff; }
+      .label { color: #64748b; font-size: 10px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; }
+      table.items { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      table.items th { background: #1E4D8C; color: #fff; text-align: left; padding: 8px; font-size: 11px; }
+      table.items td { border-bottom: 1px solid #e2e8f0; padding: 8px; }
+      .right { text-align: right; }
+      .totals { margin-top: 16px; width: 280px; margin-left: auto; }
+      .totals td { padding: 4px 8px; }
+      .grand { font-weight: bold; font-size: 14px; border-top: 2px solid #1E4D8C; }
+      .terms { margin-top: 30px; font-size: 11px; color: #4A5568; border-top: 1px solid #e2e8f0; padding-top: 14px; }
+      .mono { font-family: 'Courier New', monospace; }
+      .stamp { display: inline-block; border: 2px solid #1E4D8C; color: #1E4D8C; padding: 6px 10px; border-radius: 8px; font-weight: bold; letter-spacing: 0.08em; }
+    </style>
+  </head>
+  <body>
+    <div class="top">
+      <div>
+        <div class="brand">Watts<span>Store</span></div>
+        <div>{{company.name}}</div>
+        <div>{{company.address}}</div>
+        <div>TRN: {{company.trn}}</div>
+      </div>
+      <div class="right">
+        <h1 class="doc-title">{{docTitle}}</h1>
+        <div class="stamp">FORMAL {{docTitle}}</div>
+        <table class="meta">
+          <tr><td>Reference</td><td class="mono">{{reference}}</td></tr>
+          <tr><td>Date</td><td>{{date issuedAt}}</td></tr>
+          {{#if validUntil}}<tr><td>Valid until</td><td>{{date validUntil}}</td></tr>{{/if}}
+        </table>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="box">
+        <div class="label">Customer</div>
+        <h1>Bill To</h1>
+        <div>{{customer.name}}</div>
+        {{#if customer.company}}<div>{{customer.company}}</div>{{/if}}
+        <div>{{customer.location}}</div>
+        {{#if customer.trn}}<div>TRN: {{customer.trn}}</div>{{/if}}
+      </div>
+      <div class="box">
+        <div class="label">Commercial Terms</div>
+        <h1>Quotation Summary</h1>
+        <div><strong>Currency:</strong> {{currency}}</div>
+        <div><strong>Payment:</strong> {{paymentTerms}}</div>
+        {{#if validUntil}}<div><strong>Validity:</strong> Until {{date validUntil}}</div>{{/if}}
+      </div>
+    </div>
+
+    <table class="items">
+      <thead>
+        <tr><th>Product</th><th>SKU</th><th>Qty</th><th class="right">Unit Price</th><th class="right">Subtotal</th></tr>
+      </thead>
+      <tbody>
+        {{#each items}}
+        <tr>
+          <td>{{this.title}}</td>
+          <td class="mono">{{this.sku}}</td>
+          <td>{{this.quantity}}</td>
+          <td class="right">{{money this.unitPrice ../currency}}</td>
+          <td class="right">{{money this.subtotal ../currency}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <table class="totals">
+      <tr class="grand"><td>Total</td><td class="right">{{money total currency}}</td></tr>
+    </table>
+
+    <div class="terms">
+      <p><strong>Payment terms:</strong> {{paymentTerms}}</p>
+      <p><strong>Quotation note:</strong> Prices are subject to stock availability at acceptance. Delivery charges and taxes are included only where explicitly shown above.</p>
+      {{#if notes}}<p><strong>Notes:</strong> {{notes}}</p>{{/if}}
+      <p>{{company.name}} &middot; {{company.address}}</p>
+    </div>
+  </body>
+</html>

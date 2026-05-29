@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Addresses">
+  <circle cx="24" cy="24" r="22" fill="#eef3fa"/>
+  <path d="M24 8 C18 8 13 13 13 19 C13 27 24 40 24 40 C24 40 35 27 35 19 C35 13 30 8 24 8 Z" fill="#1e4d8c"/>
+  <circle cx="24" cy="19" r="5" fill="#ffd83a"/>
+</svg>

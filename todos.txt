@@ -1,0 +1,31 @@
+Schema: MediaAsset, Testimonial, Testimonial author fields; expand Banner placements
+
+Backend: media library service (upload presign, list, search, delete)
+
+Backend: testimonials service + public/admin routes
+
+Backend: settings endpoint for announcement bar + contact + trust badges
+
+Admin: Media Library page (grid, upload, search, delete, copy URL)
+
+Admin: Image-picker component reusable in banner/blog/legal editors
+
+Admin: Testimonials CRUD page
+
+Admin: Site Settings page (announcement, contact, trust badges, footer)
+
+Admin: CMS hub /admin/content landing page
+
+Frontend: wire homepage testimonials, brands, categories to live API
+
+Frontend: replace ALL remaining hardcoded BannerTiles with CMS banners
+
+Frontend: wire announcement bar + footer contact to /settings
+
+Frontend: wire homepage blog rail to /blog API
+
+Frontend: convert About page to CMS legal-page
+
+Seed: testimonials, media samples, default settings, About content
+
+Type-check API + frontend
