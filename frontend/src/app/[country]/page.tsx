@@ -23,7 +23,7 @@ interface FeaturedSections {
   newArrivals: TProductCard[];
   bestSellers: TProductCard[];
 }
-interface ApiCategory { id: number; name: string; slug: string; imageUrl?: string | null }
+interface ApiCategory { id: number; name: string; slug: string; imageUrl?: string | null; iconUrl?: string | null }
 interface ApiBrand { name: string; slug: string; originCountry?: string | null }
 interface BlogPost { title: string; slug: string; category: string | null; coverImageUrl?: string | null; publishedAt: string | null }
 interface ApiFaqItem { question: string; answer: string }
@@ -91,6 +91,7 @@ async function loadHomeData(region: string) {
     name: item.name,
     slug: item.slug,
     image: item.imageUrl ?? undefined,
+    iconUrl: item.iconUrl ?? undefined,
   }));
   const brandTiles: BrandTileData[] = brands.slice(0, 12).map((item) => ({
     name: item.name,

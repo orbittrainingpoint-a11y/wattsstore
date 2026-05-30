@@ -23,6 +23,7 @@ interface Country {
 }
 
 interface CategoryOption { id: number; name: string; depth?: number; isActive?: boolean }
+interface BrandOption { id: number; name: string; isActive: boolean }
 
 interface Pricing {
   countryId: number;
@@ -38,6 +39,7 @@ interface Variant {
   variantSku: string;
   attributes: Record<string, string>;
   weightKg: number | string;
+  isActive?: boolean;
   pricing: Pricing[];
 }
 
@@ -72,6 +74,7 @@ interface AdminProduct {
   fullDescription: string | null;
   keyFeatures: string[];
   brandOrigin: string | null;
+  brand: { id: number; name: string } | null;
   datasheetUrl: string | null;
   iesFileUrl: string | null;
   isActive: boolean;
@@ -98,6 +101,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
   const [product, setProduct] = useState<AdminProduct | null>(null);
   const [countries, setCountries] = useState<Country[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [brands, setBrands] = useState<BrandOption[]>([]);
   const [variantSku, setVariantSku] = useState('');
   const [attributes, setAttributes] = useState<Record<string, string>>({});
   const [weightKg, setWeightKg] = useState('0');
@@ -114,11 +118,17 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
   const [busy, setBusy] = useState(false);
 
   function load() {
-    Promise.all([api.get<AdminProduct>(`/admin/products/${id}`), api.get<Country[]>('/admin/countries'), api.get<CategoryOption[]>('/admin/categories')])
-      .then(([productResponse, countryResponse, categoryResponse]) => {
+    Promise.all([
+      api.get<AdminProduct>(`/admin/products/${id}`),
+      api.get<Country[]>('/admin/countries'),
+      api.get<CategoryOption[]>('/admin/categories'),
+      api.get<BrandOption[]>('/admin/brands?status=active'),
+    ])
+      .then(([productResponse, countryResponse, categoryResponse, brandResponse]) => {
         setProduct(productResponse.data);
         setCountries(countryResponse.data);
         setCategories(categoryResponse.data);
+        setBrands(brandResponse.data);
         setVariantId((current) => current || productResponse.data.variants[0]?.id || 0);
         setCountryId((current) => current || countryResponse.data[0]?.id || 0);
       })
@@ -148,6 +158,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
       await api.put(`/admin/products/${id}`, {
         title: product.title,
         categoryId: product.category.id,
+        brandId: product.brand?.id ?? null,
         skuBase: product.skuBase,
         shortDescription: product.shortDescription,
         fullDescription: product.fullDescription,
@@ -284,6 +295,28 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
     load();
   }
 
+  async function updateExistingVariant(variant: Variant, patch: { attributes?: Record<string, unknown>; weightKg?: number; isActive?: boolean }) {
+    try {
+      await api.put(`/admin/products/${id}/variants/${variant.id}`, patch);
+      setMsg('Variant updated.');
+      load();
+    } catch (error) {
+      setErr((error as Error).message);
+    }
+  }
+
+  async function deleteExistingVariant(variant: Variant) {
+    if (!confirm(`Delete variant ${variant.variantSku}? This also removes its pricing rows.`)) return;
+    try {
+      await api.del(`/admin/products/${id}/variants/${variant.id}`);
+      setMsg('Variant deleted.');
+      if (variantId === variant.id) setVariantId(0);
+      load();
+    } catch (error) {
+      setErr((error as Error).message);
+    }
+  }
+
   async function archive() {
     if (!confirm('Archive this product? It will be hidden from the storefront.')) return;
     try {
@@ -347,6 +380,23 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
                   <option key={category.id} value={category.id}>{`${'-- '.repeat(Math.max(0, (category.depth ?? 1) - 1))}${category.name}`}</option>
                 ))}
               </select>
+            </label>
+            <label className="block">
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-gray">Brand</span>
+              <select
+                className="input mt-1.5"
+                value={product.brand?.id ?? 0}
+                onChange={(event) => {
+                  const id = Number(event.target.value);
+                  if (!id) return setProduct({ ...product, brand: null });
+                  const next = brands.find((brand) => brand.id === id);
+                  if (next) setProduct({ ...product, brand: { id: next.id, name: next.name } });
+                }}
+              >
+                <option value={0}>— None —</option>
+                {brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+              </select>
+              {brands.length === 0 && <p className="mt-1 text-xs text-brand-gray">No brands yet — add some in <a className="underline" href="/admin/catalog/brands">Brands</a> first.</p>}
             </label>
             <label className="block">
               <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-gray">Origin</span>
@@ -524,12 +574,21 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
               <div className="space-y-3">
                 {product.variants.map((variant) => (
                   <div key={variant.id} className="rounded-lg border border-gray-100 p-3 text-xs">
-                    <div className="font-mono font-bold text-brand-blue">{variant.variantSku}</div>
-                    <div className="mt-1 text-brand-gray">{Object.values(variant.attributes).join(' | ') || 'No attributes'}</div>
-                    <div className="mt-2 text-brand-dark">{variant.pricing.map((row) => `${row.country.currencyCode} ${row.retailPrice ?? 'Contact'} / ${row.stockOnHand} in stock`).join(', ') || 'No regional price yet'}</div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono font-bold text-brand-blue">{variant.variantSku}</span>
+                      <div className="flex gap-1">
+                        <button className="btn-ghost btn-sm" onClick={() => void updateExistingVariant(variant, { isActive: variant.isActive === false ? true : false })}>
+                          {variant.isActive === false ? 'Activate' : 'Deactivate'}
+                        </button>
+                        <button className="btn-ghost btn-sm text-status-error" onClick={() => void deleteExistingVariant(variant)}>Delete</button>
+                      </div>
+                    </div>
+                    <div className="mt-1 text-brand-gray">{Object.entries(variant.attributes ?? {}).map(([key, value]) => `${key}: ${String(value)}`).join(' | ') || 'No attributes'}</div>
+                    <div className="mt-2 text-brand-dark">{variant.pricing.length === 0 ? 'No regional price yet — open Inventory matrix to set stock.' : variant.pricing.map((row) => `${row.country.currencyCode} ${row.retailPrice ?? 'Contact'} / ${row.stockOnHand} in stock`).join(', ')}</div>
                   </div>
                 ))}
               </div>
+              <p className="mt-3 text-[11px] text-brand-gray">Tip: detailed per-region price + stock edits live on the Inventory page.</p>
             </div>
           )}
         </aside>

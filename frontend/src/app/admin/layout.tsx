@@ -17,6 +17,7 @@ const NAV_GROUPS: { label: string; items: { label: string; href: string; icon: s
     items: [
       { label: 'Products', href: '/admin/catalog/products', icon: '📦' },
       { label: 'Categories', href: '/admin/catalog/categories', icon: '🗂' },
+      { label: 'Brands', href: '/admin/catalog/brands', icon: '🏷' },
       { label: 'Inventory', href: '/admin/inventory', icon: '📊' },
     ],
   },

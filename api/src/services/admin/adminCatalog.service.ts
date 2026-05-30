@@ -17,12 +17,16 @@ interface CategoryInput {
   name: string;
   slug?: string;
   parentId?: number | null;
-  description?: string;
+  description?: string | null;
   variantSpecificationSchema?: Prisma.InputJsonValue;
   showInMenu?: boolean;
+  isActive?: boolean;
   sortOrder?: number;
-  metaTitle?: string;
-  metaDescription?: string;
+  iconUrl?: string | null;
+  imageUrl?: string | null;
+  bannerImageUrl?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
 }
 
 function skuPrefixFromCategory(slug: string, name: string): string {
@@ -226,8 +230,27 @@ export const adminCatalogService = {
         barcode: input.barcode,
       },
     });
+    // Auto-create a zero-stock pricing record for every active country so the new variant
+    // appears in the inventory matrix immediately — admins can then edit price/stock there.
+    const countries = await prisma.country.findMany({ where: { isActive: true }, select: { id: true } });
+    if (countries.length) {
+      await prisma.regionalInventoryPricing.createMany({
+        data: countries.map((country) => ({
+          productVariantId: created.id,
+          countryId: country.id,
+          costPrice: 0,
+          stockOnHand: 0,
+          isAvailable: false,
+        })),
+        skipDuplicates: true,
+      });
+    }
     await invalidateCatalogCache();
     return created;
+  },
+  async deleteVariant(variantId: number) {
+    await prisma.productVariant.delete({ where: { id: variantId } });
+    await invalidateCatalogCache();
   },
   async updateVariant(variantId: number, input: { attributes?: Record<string, unknown>; weightKg?: number; barcode?: string; isActive?: boolean }) {
     if (input.attributes) {

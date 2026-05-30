@@ -2,11 +2,34 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { adminCatalogService } from '../../../services/admin/adminCatalog.service';
+import { brandService } from '../../../services/admin/brand.service';
 import { validate } from '../../../middlewares/validate.middleware';
 import { asyncHandler } from '../../../utils/asyncHandler';
 import { ok, created, paginated, parsePagination } from '../../../utils/response';
 
 export const adminCatalogRoutes = Router();
+
+// ── Brands ──
+const brandSchema = z.object({
+  name: z.string().min(1).max(150),
+  slug: z.string().max(160).optional(),
+  logoUrl: z.string().max(500).nullable().optional(),
+  bannerImageUrl: z.string().max(500).nullable().optional(),
+  originCountry: z.string().max(100).nullable().optional(),
+  description: z.string().nullable().optional(),
+  websiteUrl: z.string().max(500).nullable().optional(),
+  metaTitle: z.string().max(255).nullable().optional(),
+  metaDescription: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
+  isFeatured: z.boolean().optional(),
+  sortOrder: z.number().int().optional(),
+});
+adminCatalogRoutes.get('/brands', asyncHandler(async (req, res) => ok(res, await brandService.list({ status: req.query.status as string | undefined, search: req.query.search as string | undefined }))));
+adminCatalogRoutes.get('/brands/:id', asyncHandler(async (req, res) => ok(res, await brandService.get(Number(req.params.id)))));
+adminCatalogRoutes.post('/brands', validate(brandSchema), asyncHandler(async (req, res) => created(res, await brandService.create(req.body))));
+adminCatalogRoutes.put('/brands/:id', validate(brandSchema.partial()), asyncHandler(async (req, res) => ok(res, await brandService.update(Number(req.params.id), req.body))));
+adminCatalogRoutes.delete('/brands/:id', asyncHandler(async (req, res) => { await brandService.archive(Number(req.params.id)); return ok(res, { archived: true }); }));
+adminCatalogRoutes.put('/brands/:id/restore', asyncHandler(async (req, res) => ok(res, await brandService.restore(Number(req.params.id)))));
 
 const variantFieldSchema = z.object({
   field: z.string().min(1).max(60).regex(/^[a-z][a-z0-9_]*$/, 'Use lowercase letters, numbers and underscores, starting with a letter.'),
@@ -21,12 +44,16 @@ const categorySchema = z.object({
   name: z.string().min(1).max(150),
   slug: z.string().max(160).optional(),
   parentId: z.number().int().positive().nullable().optional(),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
   variantSpecificationSchema: z.array(variantFieldSchema).max(20).optional(),
   showInMenu: z.boolean().optional(),
+  isActive: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
-  metaTitle: z.string().max(255).optional(),
-  metaDescription: z.string().optional(),
+  iconUrl: z.string().max(500).nullable().optional(),
+  imageUrl: z.string().max(500).nullable().optional(),
+  bannerImageUrl: z.string().max(500).nullable().optional(),
+  metaTitle: z.string().max(255).nullable().optional(),
+  metaDescription: z.string().nullable().optional(),
 });
 const archiveCategorySchema = z.object({
   action: z.enum(['archive_only', 'archive_products', 'move_products']).default('archive_only'),
@@ -45,7 +72,7 @@ adminCatalogRoutes.get('/countries', asyncHandler(async (_req, res) => ok(res, a
 // ── Products ──
 const productSchema = z.object({
   categoryId: z.number().int().positive(),
-  brandId: z.number().int().positive().optional(),
+  brandId: z.number().int().positive().nullable().optional(),
   skuBase: z.string().min(1).max(100),
   title: z.string().min(1).max(255),
   slug: z.string().max(270).optional(),
@@ -100,6 +127,7 @@ const variantSchema = z.object({
 });
 adminCatalogRoutes.post('/products/:id/variants', validate(variantSchema), asyncHandler(async (req, res) => created(res, await adminCatalogService.addVariant(Number(req.params.id), req.body))));
 adminCatalogRoutes.put('/products/:id/variants/:variantId', validate(variantSchema.omit({ variantSku: true }).partial()), asyncHandler(async (req, res) => ok(res, await adminCatalogService.updateVariant(Number(req.params.variantId), req.body))));
+adminCatalogRoutes.delete('/products/:id/variants/:variantId', asyncHandler(async (req, res) => { await adminCatalogService.deleteVariant(Number(req.params.variantId)); return ok(res, { deleted: true }); }));
 
 // ── Regional pricing ──
 const pricingSchema = z.object({

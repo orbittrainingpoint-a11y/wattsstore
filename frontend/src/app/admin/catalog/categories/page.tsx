@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
+import { ImagePicker } from '@/components/admin/ImagePicker';
 
 interface Category {
   id: number;
@@ -13,6 +14,11 @@ interface Category {
   parentId: number | null;
   sortOrder: number;
   depth: number;
+  iconUrl: string | null;
+  imageUrl: string | null;
+  bannerImageUrl: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
   variantSpecificationSchema: VariantField[] | null;
 }
 
@@ -33,6 +39,11 @@ interface CategoryForm {
   parentId: number | null;
   sortOrder: number;
   showInMenu: boolean;
+  iconUrl: string;
+  imageUrl: string;
+  bannerImageUrl: string;
+  metaTitle: string;
+  metaDescription: string;
   variantSpecificationSchema: VariantField[];
 }
 
@@ -43,6 +54,11 @@ const emptyForm = (parentId: number | null = null): CategoryForm => ({
   parentId,
   sortOrder: 0,
   showInMenu: true,
+  iconUrl: '',
+  imageUrl: '',
+  bannerImageUrl: '',
+  metaTitle: '',
+  metaDescription: '',
   variantSpecificationSchema: [],
 });
 
@@ -97,10 +113,15 @@ export default function AdminCategories() {
       const payload = {
         name: editor.name.trim(),
         slug: editor.slug.trim() || undefined,
-        description: editor.description.trim(),
+        description: editor.description.trim() || null,
         parentId: editor.parentId,
         sortOrder: editor.sortOrder,
         showInMenu: editor.showInMenu,
+        iconUrl: editor.iconUrl.trim() || null,
+        imageUrl: editor.imageUrl.trim() || null,
+        bannerImageUrl: editor.bannerImageUrl.trim() || null,
+        metaTitle: editor.metaTitle.trim() || null,
+        metaDescription: editor.metaDescription.trim() || null,
         variantSpecificationSchema: editor.variantSpecificationSchema.map((field) => ({
           ...field,
           field: field.field.trim(),
@@ -162,6 +183,11 @@ export default function AdminCategories() {
       parentId: row.parentId,
       sortOrder: row.sortOrder,
       showInMenu: row.showInMenu,
+      iconUrl: row.iconUrl ?? '',
+      imageUrl: row.imageUrl ?? '',
+      bannerImageUrl: row.bannerImageUrl ?? '',
+      metaTitle: row.metaTitle ?? '',
+      metaDescription: row.metaDescription ?? '',
       variantSpecificationSchema: normalizeSchema(row.variantSpecificationSchema),
     });
     setEditorTab('details');
@@ -208,6 +234,9 @@ export default function AdminCategories() {
                 <td className="p-4 font-semibold">
                   <span style={{ paddingLeft: `${(row.depth - 1) * 22}px` }} className="inline-flex items-center gap-2">
                     {row.depth > 1 && <span className="text-brand-gray">|-</span>}
+                    {row.iconUrl
+                      ? <img src={row.iconUrl} alt="" className="h-7 w-7 rounded-lg object-contain bg-brand-light" />
+                      : <span className="h-7 w-7 rounded-lg bg-brand-light inline-flex items-center justify-center text-[10px] font-bold text-brand-gray">{row.name.charAt(0).toUpperCase()}</span>}
                     {row.name}
                   </span>
                 </td>
@@ -269,6 +298,30 @@ export default function AdminCategories() {
                     Show in storefront menu
                   </label>
                 </div>
+
+                <div>
+                  <Field label="Icon URL (small square — used in menus & category strip)" value={editor.iconUrl} placeholder="/img/categories/icons/example.svg" onChange={(value) => setEditor({ ...editor, iconUrl: value })} />
+                  <div className="mt-2">
+                    <ImagePicker folder="categories" value={editor.iconUrl || null} onSelect={(url) => setEditor({ ...editor, iconUrl: url })} label="Upload / pick icon" />
+                  </div>
+                </div>
+                <div>
+                  <Field label="Tile image URL (used on home + grid)" value={editor.imageUrl} placeholder="/img/categories/example.jpg" onChange={(value) => setEditor({ ...editor, imageUrl: value })} />
+                  <div className="mt-2">
+                    <ImagePicker folder="categories" value={editor.imageUrl || null} onSelect={(url) => setEditor({ ...editor, imageUrl: url })} label="Upload / pick tile image" />
+                  </div>
+                </div>
+                <div>
+                  <Field label="Banner image URL (PLP header)" value={editor.bannerImageUrl} placeholder="/img/categories/example-banner.jpg" onChange={(value) => setEditor({ ...editor, bannerImageUrl: value })} />
+                  <div className="mt-2">
+                    <ImagePicker folder="categories" value={editor.bannerImageUrl || null} onSelect={(url) => setEditor({ ...editor, bannerImageUrl: url })} label="Upload / pick banner" />
+                  </div>
+                </div>
+                <Field label="Meta title" value={editor.metaTitle} onChange={(value) => setEditor({ ...editor, metaTitle: value })} />
+                <label className="block">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-gray">Meta description</span>
+                  <textarea className="input mt-1.5 min-h-[60px]" value={editor.metaDescription} onChange={(event) => setEditor({ ...editor, metaDescription: event.target.value })} />
+                </label>
               </div>
             ) : (
               <VariantSchemaEditor value={editor.variantSpecificationSchema} onChange={(variantSpecificationSchema) => setEditor({ ...editor, variantSpecificationSchema })} />
