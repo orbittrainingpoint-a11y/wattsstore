@@ -15,34 +15,18 @@ const CATEGORY_BY_SLUG: Record<string, string> = {
   'deals':                   '/img/categories/deals.svg',
 };
 
-const PRODUCT_POOL = [
-  '/img/products/catalog/explosion-proof-led-floodlight.jpg',
-  '/img/products/catalog/mono-solar-panel-550.jpg',
-  '/img/products/catalog/mcb-double-pole.jpg',
-];
-
-const CATEGORY_TO_PRODUCT: Record<string, string> = {
-  'industrial-lighting':   '/img/products/catalog/explosion-proof-led-floodlight.jpg',
-  'commercial-lighting':   '/img/products/catalog/commercial-led-panel.jpg',
-  'solar-equipment':       '/img/products/catalog/mono-solar-panel-550.jpg',
-  'cables-wiring':         '/img/products/catalog/xlpe-power-cable.jpg',
-  'wiring-accessories':    '/img/products/catalog/ip68-cable-gland-kit.jpg',
-  'power-control':         '/img/products/catalog/mcb-double-pole.jpg',
-  'renewable-accessories': '/img/products/catalog/solar-mounting-rail.jpg',
-  'deals':                 '/img/products/catalog/solar-rooftop-bundle.jpg',
-};
+// Neutral placeholder used when a product has no uploaded image. Avoid showing random
+// catalogue photos for products that don't actually have them — that confuses admins.
+export const PRODUCT_IMAGE_PLACEHOLDER = '/img/illustrations/empty-state.svg';
 
 export function categoryImage(slug: string): string {
   return CATEGORY_BY_SLUG[slug] ?? '/img/categories/industrial-lighting.svg';
 }
 
-/** Returns a product hero image. If the API has stored an image URL, prefer it; else pick by category. */
+/** Returns a product hero image. Uses the saved URL if present, otherwise a neutral placeholder. */
 export function productImage(opts: { url?: string | null; categorySlug?: string; productId?: number }): string {
   if (opts.url && (opts.url.startsWith('http') || opts.url.startsWith('/'))) return opts.url;
-  if (opts.categorySlug && CATEGORY_TO_PRODUCT[opts.categorySlug]) return CATEGORY_TO_PRODUCT[opts.categorySlug];
-  // deterministic pseudo-random pick from pool by productId
-  if (opts.productId != null) return PRODUCT_POOL[opts.productId % PRODUCT_POOL.length];
-  return PRODUCT_POOL[0];
+  return PRODUCT_IMAGE_PLACEHOLDER;
 }
 
 export const HERO_IMAGES = {

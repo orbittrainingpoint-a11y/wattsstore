@@ -8,7 +8,7 @@ import { useCart } from '@/lib/useCart';
 import { api } from '@/lib/api';
 import { RatingStars } from '@/components/ui/RatingStars';
 import { TrustStrip } from './TrustStrip';
-import { productImage } from '@/lib/images';
+import { PRODUCT_IMAGE_PLACEHOLDER } from '@/lib/images';
 import { useUiStore } from '@/stores/uiStore';
 import { useAuth } from '@/lib/useAuth';
 import { useRouter } from 'next/navigation';
@@ -81,11 +81,11 @@ export function ProductView({ product, region, currency }: { product: ProductDet
         ? <span className="badge-warning font-bold">⚠ Only {selected.stockAvailable} left — order soon</span>
         : <span className="badge-error font-bold">❌ Out of Stock — RFQ available</span>;
 
-  // Products without registered media receive catalogue-photo fallbacks.
-  const synth = (i: number) => productImage({ productId: (product.id + i * 7) || i, categorySlug: product.category.slug });
+  // Only show real images. If the product has none, show a single placeholder tile so the
+  // gallery doesn't pad itself with random catalogue photos the admin never uploaded.
   const galleryImages = product.images.length > 0
     ? product.images
-    : [0, 1, 2, 0, 1, 2].map((i) => ({ url: synth(i), alt: product.title, isPrimary: false }));
+    : [{ url: PRODUCT_IMAGE_PLACEHOLDER, alt: product.title, isPrimary: false }];
 
   return (
     <div className="grid gap-8 lg:grid-cols-[58%_42%]">
@@ -99,7 +99,7 @@ export function ProductView({ product, region, currency }: { product: ProductDet
             {product.brandOrigin && ORIGIN_CLASS[product.brandOrigin] && (
               <div className={`chip-origin absolute right-4 top-4 z-10 ${ORIGIN_CLASS[product.brandOrigin]}`}>{ORIGIN_LABEL[product.brandOrigin]}</div>
             )}
-            <img src={galleryImages[activeImg]?.url || synth(0)} alt={product.title} className="absolute inset-0 h-full w-full object-cover" />
+            <img src={galleryImages[activeImg]?.url || PRODUCT_IMAGE_PLACEHOLDER} alt={product.title} className="absolute inset-0 h-full w-full object-cover" />
             <div className="absolute bottom-3 right-3 text-xs bg-white/95 text-brand-dark px-2 py-1 rounded font-medium">{activeImg + 1} / {galleryImages.length}</div>
           </div>
         </div>
@@ -111,7 +111,7 @@ export function ProductView({ product, region, currency }: { product: ProductDet
               className={`aspect-square rounded-lg border-2 overflow-hidden bg-brand-light transition ${i === activeImg ? 'border-brand-blue shadow-card' : 'border-transparent hover:border-brand-blue/40'}`}
               aria-label={`Image ${i + 1}`}
             >
-              <img src={img.url || synth(i)} alt="" className="h-full w-full object-cover" />
+              <img src={img.url || PRODUCT_IMAGE_PLACEHOLDER} alt="" className="h-full w-full object-cover" />
             </button>
           ))}
         </div>
