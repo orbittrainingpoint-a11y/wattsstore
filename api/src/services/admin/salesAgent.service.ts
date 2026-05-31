@@ -71,18 +71,25 @@ export const salesAgentService = {
 
   /** Per-agent monthly performance series. */
   async monthlySeries(agentId: number, months = 6) {
-    type Row = { month: Date; offered: bigint; accepted: bigint; revenue: number };
+    type RawRow = { month: Date; offered: bigint; accepted: bigint; revenue: number };
     const since = subDays(new Date(), months * 30);
-    return prisma.$queryRaw<Row[]>`
-      SELECT date_trunc('month', updated_at) AS month,
-             COUNT(*) FILTER (WHERE quote_status = 'offered')   AS offered,
-             COUNT(*) FILTER (WHERE quote_status = 'accepted')  AS accepted,
+    const rows = await prisma.$queryRaw<RawRow[]>`
+      SELECT date_trunc('month', updated_at)                                                        AS month,
+             COUNT(*) FILTER (WHERE quote_status = 'offered')::int                                 AS offered,
+             COUNT(*) FILTER (WHERE quote_status = 'accepted')::int                                AS accepted,
              COALESCE(SUM(total_offered_value) FILTER (WHERE quote_status = 'accepted'), 0)::float8 AS revenue
       FROM bulk_quotes
       WHERE assigned_sales_agent_id = ${agentId}
         AND updated_at >= ${since}
-      GROUP BY month
-      ORDER BY month ASC;
+      GROUP BY 1
+      ORDER BY 1 ASC;
     `;
+    // Postgres COUNT returns bigint; coerce to number so JSON.stringify doesn't throw.
+    return rows.map((r) => ({
+      month: r.month,
+      offered: Number(r.offered),
+      accepted: Number(r.accepted),
+      revenue: Number(r.revenue),
+    }));
   },
 };
