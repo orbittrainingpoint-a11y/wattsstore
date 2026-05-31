@@ -13,6 +13,7 @@ import { cmsRoutes } from './cms.routes';
 import { webhookRoutes } from './webhook.routes';
 import { salesRoutes } from './sales/salesQuote.routes';
 import { adminRoutes } from './admin';
+import { exchangeRateRoutes } from './exchangeRate.routes';
 import { apiLimiter } from '../../middlewares/rateLimit.middleware';
 
 export const v1Router = Router();
@@ -39,4 +40,5 @@ v1Router.use('/reviews', reviewRoutes);
 v1Router.use('/', contentRoutes); // /blog, /faq, /community
 v1Router.use('/', cmsRoutes); // /banners, /legal/:slug
 v1Router.use('/sales', salesRoutes);
+v1Router.use('/', exchangeRateRoutes);
 v1Router.use('/admin', adminRoutes);

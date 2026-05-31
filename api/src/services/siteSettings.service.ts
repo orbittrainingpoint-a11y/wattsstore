@@ -1,5 +1,12 @@
 import { prisma } from '../config/database';
 
+export interface CurrencyDisplaySettings {
+  enabled: boolean;
+  baseCurrency: string;   // 'USD' — prices are shown converted from this base
+  marginPct: number;      // e.g. 2.5 → add 2.5% on top of live rate
+  showBothCurrencies: boolean; // show "AED 367 (USD 100)" when true
+}
+
 export interface PublicSiteSettings {
   announcementBar: {
     enabled: boolean;
@@ -31,6 +38,7 @@ export interface PublicSiteSettings {
     defaultRegion: string;
     supportedLanguages: { code: string; label: string }[];
   };
+  currencyDisplay: CurrencyDisplaySettings;
 }
 
 const defaults: PublicSiteSettings = {
@@ -76,9 +84,15 @@ const defaults: PublicSiteSettings = {
       { code: 'de', label: 'German' },
     ],
   },
+  currencyDisplay: {
+    enabled: false,
+    baseCurrency: 'USD',
+    marginPct: 2.5,
+    showBothCurrencies: false,
+  },
 };
 
-export const PUBLIC_SETTING_KEYS = ['announcementBar', 'contact', 'trustBadges', 'footer', 'offerPopup', 'localization'] as const;
+export const PUBLIC_SETTING_KEYS = ['announcementBar', 'contact', 'trustBadges', 'footer', 'offerPopup', 'localization', 'currencyDisplay'] as const;
 
 export const siteSettingsService = {
   async publicSettings(): Promise<PublicSiteSettings> {
@@ -91,6 +105,7 @@ export const siteSettingsService = {
       footer: { ...defaults.footer, ...(value.footer ?? {}) },
       offerPopup: { ...defaults.offerPopup, ...(value.offerPopup ?? {}) },
       localization: { ...defaults.localization, ...(value.localization ?? {}) },
+      currencyDisplay: { ...defaults.currencyDisplay, ...((value.currencyDisplay as Partial<CurrencyDisplaySettings>) ?? {}) },
     };
   },
 

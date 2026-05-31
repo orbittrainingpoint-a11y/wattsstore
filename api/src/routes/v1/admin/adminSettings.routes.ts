@@ -75,6 +75,12 @@ const settingSchemas = {
     defaultRegion: z.string().min(2).max(20),
     supportedLanguages: z.array(z.object({ code: z.string().min(2).max(10), label: z.string().min(1).max(60) })).max(30),
   }),
+  currencyDisplay: z.object({
+    enabled: z.boolean(),
+    baseCurrency: z.string().length(3).toUpperCase().default('USD'),
+    marginPct: z.number().min(0).max(20).default(2.5),
+    showBothCurrencies: z.boolean().default(false),
+  }),
 } as const;
 
 adminSettingsRoutes.get('/', asyncHandler(async (_req, res) => {

@@ -4,7 +4,15 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import type { SiteSettings } from '@/lib/cms';
 
+interface CurrencyDisplayForm {
+  enabled: boolean;
+  baseCurrency: string;
+  marginPct: number;
+  showBothCurrencies: boolean;
+}
+
 interface AdminSettings extends SiteSettings {
+  currencyDisplay: CurrencyDisplayForm;
   quoteAutomation: {
     enabled: boolean;
     autoSend: boolean;
@@ -97,6 +105,12 @@ const defaults: AdminSettings = {
       { code: 'de', label: 'German' },
     ],
   },
+  currencyDisplay: {
+    enabled: false,
+    baseCurrency: 'USD',
+    marginPct: 2.5,
+    showBothCurrencies: false,
+  },
 };
 
 export default function AdminSettings() {
@@ -118,6 +132,7 @@ export default function AdminSettings() {
         taxSettings: { ...defaults.taxSettings, ...(value.taxSettings ?? {}) },
         shippingRates: { ...defaults.shippingRates, ...(value.shippingRates ?? {}) },
         localization: { ...defaults.localization, ...(value.localization ?? {}) },
+        currencyDisplay: { ...defaults.currencyDisplay, ...((value.currencyDisplay as Partial<CurrencyDisplayForm>) ?? {}) },
       });
     }).catch(() => undefined);
   }, []);
@@ -136,6 +151,7 @@ export default function AdminSettings() {
         api.put('/admin/settings/taxSettings', { value: form.taxSettings }),
         api.put('/admin/settings/shippingRates', { value: form.shippingRates }),
         api.put('/admin/settings/localization', { value: form.localization }),
+        api.put('/admin/settings/currencyDisplay', { value: form.currencyDisplay }),
       ]);
       setMessage('Site settings saved and available to the storefront.');
     } catch (error) {
@@ -392,7 +408,101 @@ export default function AdminSettings() {
             })} />
           </label>
         </section>
+
+        <section className="card p-6 space-y-4 lg:col-span-2">
+          <div>
+            <h2 className="font-extrabold">Currency display &amp; live exchange rates</h2>
+            <p className="mt-1 text-xs text-brand-gray">
+              When enabled, the storefront converts prices from your base currency (e.g. USD) to each
+              customer's local currency using real-time exchange rates from open.er-api.com, updated hourly.
+              Your margin is added on top of the mid-market rate so you always earn the spread.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-6">
+            <label className="flex items-center gap-2 text-sm font-semibold">
+              <input type="checkbox" checked={form.currencyDisplay.enabled} onChange={(event) => setForm({ ...form, currencyDisplay: { ...form.currencyDisplay, enabled: event.target.checked } })} />
+              Enable real-time currency conversion on storefront
+            </label>
+            <label className="flex items-center gap-2 text-sm font-semibold">
+              <input type="checkbox" checked={form.currencyDisplay.showBothCurrencies} onChange={(event) => setForm({ ...form, currencyDisplay: { ...form.currencyDisplay, showBothCurrencies: event.target.checked } })} />
+              Show both local and base currency price (e.g. "AED 367 (USD 100)")
+            </label>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="block">
+              <span className="text-xs font-bold uppercase text-brand-gray">Base currency (prices are stored in this currency)</span>
+              <select className="input mt-1" value={form.currencyDisplay.baseCurrency} onChange={(event) => setForm({ ...form, currencyDisplay: { ...form.currencyDisplay, baseCurrency: event.target.value } })}>
+                <option value="USD">USD — US Dollar</option>
+                <option value="AED">AED — UAE Dirham</option>
+                <option value="EUR">EUR — Euro</option>
+                <option value="GBP">GBP — British Pound</option>
+                <option value="INR">INR — Indian Rupee</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-xs font-bold uppercase text-brand-gray">Your margin on top of live rate (%)</span>
+              <input
+                type="number"
+                min={0}
+                max={20}
+                step={0.1}
+                className="input mt-1"
+                value={form.currencyDisplay.marginPct}
+                onChange={(event) => setForm({ ...form, currencyDisplay: { ...form.currencyDisplay, marginPct: Number(event.target.value) } })}
+              />
+              <span className="mt-1 block text-xs text-brand-gray">
+                e.g. 2.5% → a $100 product shows as AED 379 instead of AED 367 (rate × 1.025)
+              </span>
+            </label>
+          </div>
+
+          <LiveRatesPreview enabled={form.currencyDisplay.enabled} />
+        </section>
       </div>
+    </div>
+  );
+}
+
+function LiveRatesPreview({ enabled }: { enabled: boolean }) {
+  const [rates, setRates] = useState<{ rates: Record<string, number>; fetchedAt: string; marginPct: number } | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  function fetchPreview() {
+    setLoading(true);
+    api.get<typeof rates>('/exchange-rates')
+      .then((r) => setRates(r.data))
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
+  }
+
+  const PREVIEW_CURRENCIES = ['AED', 'KES', 'EUR', 'GBP', 'INR', 'PKR', 'SAR', 'QAR'];
+
+  return (
+    <div>
+      <div className="flex items-center gap-3">
+        <button type="button" className="btn-outline btn-sm" onClick={fetchPreview} disabled={loading}>
+          {loading ? 'Fetching...' : 'Preview live rates'}
+        </button>
+        {rates && <span className="text-xs text-brand-gray">Updated {new Date(rates.fetchedAt).toLocaleTimeString()} · {rates.marginPct}% margin applied</span>}
+      </div>
+      {rates && (
+        <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
+          {PREVIEW_CURRENCIES.map((code) => {
+            const rate = rates.rates[code];
+            if (!rate) return null;
+            return (
+              <div key={code} className="rounded-lg border border-gray-100 px-3 py-2 text-sm">
+                <span className="font-bold text-brand-blue">{code}</span>
+                <span className="ml-2 font-mono">{rate.toFixed(4)}</span>
+                <span className="block text-[11px] text-brand-gray">per 1 USD</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {!enabled && <p className="mt-2 text-xs text-brand-gray">Enable the toggle above and save to activate real-time prices on the storefront.</p>}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { RatingStars } from '@/components/ui/RatingStars';
 import { productImage } from '@/lib/images';
 import { useAuth } from '@/lib/useAuth';
 import { useUiStore } from '@/stores/uiStore';
+import { useExchangeRates, REGION_CURRENCY } from '@/lib/useExchangeRates';
 
 const ORIGIN_CLASS: Record<string, string> = { Indian: 'chip-india', Chinese: 'chip-china', German: 'chip-germany' };
 const ORIGIN_LABEL: Record<string, string> = { Indian: '🇮🇳 India', Chinese: '🇨🇳 China', German: '🇩🇪 Germany' };
@@ -34,6 +35,18 @@ export function ProductCard({
   const [busy, setBusy] = useState(false);
   const [wished, setWished] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const { rates, convert } = useExchangeRates();
+
+  // When real-time currency display is enabled, convert the stored regional price
+  // to the active country's currency using live rates + admin margin.
+  const regionCurrency = REGION_CURRENCY[region] ?? currency;
+  const displayPrice = rates?.enabled && product.price != null
+    ? convert(product.price, currency, regionCurrency)
+    : product.price;
+  const displayCompare = rates?.enabled && product.compareAtPrice != null
+    ? convert(product.compareAtPrice, currency, regionCurrency)
+    : product.compareAtPrice;
+  const displayCurrency = rates?.enabled ? regionCurrency : currency;
 
   const discountPct =
     product.price && product.compareAtPrice && product.compareAtPrice > product.price
@@ -148,9 +161,12 @@ export function ProductCard({
         <div className="mt-2 flex items-baseline gap-2">
           {product.isPriceVisible ? (
             <>
-              <span className="font-mono text-base font-bold text-brand-blue">{formatCurrency(product.price, currency)}</span>
-              {product.compareAtPrice && product.price && product.compareAtPrice > product.price && (
-                <span className="text-xs text-brand-gray line-through">{formatCurrency(product.compareAtPrice, currency)}</span>
+              <span className="font-mono text-base font-bold text-brand-blue">{formatCurrency(displayPrice, displayCurrency)}</span>
+              {displayCompare && displayPrice && displayCompare > displayPrice && (
+                <span className="text-xs text-brand-gray line-through">{formatCurrency(displayCompare, displayCurrency)}</span>
+              )}
+              {rates?.enabled && rates.showBothCurrencies && product.price != null && displayCurrency !== currency && (
+                <span className="text-[11px] text-brand-gray">({formatCurrency(product.price, currency)})</span>
               )}
             </>
           ) : (

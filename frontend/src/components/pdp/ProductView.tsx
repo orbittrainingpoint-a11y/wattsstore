@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { RatingStars } from '@/components/ui/RatingStars';
 import { TrustStrip } from './TrustStrip';
 import { PRODUCT_IMAGE_PLACEHOLDER } from '@/lib/images';
+import { useExchangeRates, REGION_CURRENCY } from '@/lib/useExchangeRates';
 import { useUiStore } from '@/stores/uiStore';
 import { useAuth } from '@/lib/useAuth';
 import { useRouter } from 'next/navigation';
@@ -29,6 +30,13 @@ export function ProductView({ product, region, currency }: { product: ProductDet
   const [wished, setWished] = useState(false);
 
   const schema = product.variantSchema ?? [];
+  const { rates, convert } = useExchangeRates();
+  const regionCurrency = REGION_CURRENCY[region] ?? currency;
+  const pdpCurrency = rates?.enabled ? regionCurrency : currency;
+  function pdpPrice(amount: number | null | undefined) {
+    if (amount == null) return null;
+    return rates?.enabled ? convert(amount, currency, regionCurrency) : amount;
+  }
   const attrValues = useMemo(() => {
     const map: Record<string, Set<string>> = {};
     for (const v of product.variants) {
@@ -145,9 +153,12 @@ export function ProductView({ product, region, currency }: { product: ProductDet
           <div className="mt-5 flex items-baseline gap-3 flex-wrap">
             {product.isPriceVisible ? (
               <>
-                <span className="font-mono text-3xl font-extrabold text-brand-blue">{formatCurrency(selected?.price ?? null, currency)}</span>
+                <span className="font-mono text-3xl font-extrabold text-brand-blue">{formatCurrency(pdpPrice(selected?.price), pdpCurrency)}</span>
                 {selected?.compareAtPrice && selected.price && selected.compareAtPrice > selected.price && (
-                  <span className="text-base text-brand-gray line-through">{formatCurrency(selected.compareAtPrice, currency)}</span>
+                  <span className="text-base text-brand-gray line-through">{formatCurrency(pdpPrice(selected.compareAtPrice), pdpCurrency)}</span>
+                )}
+                {rates?.enabled && rates.showBothCurrencies && selected?.price != null && pdpCurrency !== currency && (
+                  <span className="text-sm text-brand-gray">({formatCurrency(selected.price, currency)})</span>
                 )}
                 {discountPct > 0 && <span className="badge-error font-bold">SAVE {discountPct}%</span>}
               </>
@@ -235,7 +246,7 @@ export function ProductView({ product, region, currency }: { product: ProductDet
         <div className="flex items-center gap-3">
           <div className="flex-1 min-w-0">
             {product.isPriceVisible ? (
-              <div className="font-mono text-lg font-extrabold text-brand-blue truncate">{formatCurrency(selected?.price ?? null, currency)}</div>
+              <div className="font-mono text-lg font-extrabold text-brand-blue truncate">{formatCurrency(pdpPrice(selected?.price), pdpCurrency)}</div>
             ) : (
               <div className="text-sm font-bold text-brand-gray">Contact for Price</div>
             )}
