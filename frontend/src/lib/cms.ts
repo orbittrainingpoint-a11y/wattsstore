@@ -76,6 +76,16 @@ export interface SiteSettings {
   footer: { description: string; social: Record<string, string>; certifications: string[] };
   offerPopup: { enabled: boolean; title: string; body: string; ctaLabel: string; ctaUrl: string; frequencyHours: number };
   localization?: { autoDetectCountry: boolean; defaultRegion: string; supportedLanguages: { code: string; label: string }[] };
+  currencyDisplay?: { enabled: boolean; baseCurrency: string; marginPct: number; showBothCurrencies: boolean };
+  pricingVisibility?: { regions: { slug: string; label: string; showPrice: boolean }[] };
+}
+
+/** Returns true if prices should be shown for the given region slug. Defaults to true if setting not configured. */
+export function regionShowsPrice(settings: SiteSettings | null, regionSlug: string): boolean {
+  const regions = settings?.pricingVisibility?.regions;
+  if (!regions?.length) return true;
+  const match = regions.find((r) => r.slug === regionSlug);
+  return match ? match.showPrice : true;
 }
 
 export async function loadSiteSettings(): Promise<SiteSettings | null> {

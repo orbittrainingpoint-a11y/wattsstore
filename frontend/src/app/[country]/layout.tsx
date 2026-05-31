@@ -6,6 +6,7 @@ import { AnnouncementBar } from '@/components/layout/AnnouncementBar';
 import { CartDrawer } from '@/components/layout/CartDrawer';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { OfferPopup } from '@/components/layout/OfferPopup';
+import { PwaInstallBanner } from '@/components/ui/PwaInstallBanner';
 import { REGIONS } from '@/lib/utils';
 
 export function generateStaticParams() {
@@ -34,6 +35,7 @@ export default async function CountryLayout({
         <BottomNav region={country} />
       </Suspense>
       <OfferPopup region={country} />
+      <PwaInstallBanner />
     </>
   );
 }

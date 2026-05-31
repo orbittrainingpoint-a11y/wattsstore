@@ -4,6 +4,15 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import type { SiteSettings } from '@/lib/cms';
 
+type Tab = 'general' | 'currency' | 'pricing' | 'quotes' | 'localization';
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'general',     label: 'General' },
+  { id: 'currency',    label: 'Currency & Rates' },
+  { id: 'pricing',     label: 'Pricing Visibility' },
+  { id: 'quotes',      label: 'Quotes & Orders' },
+  { id: 'localization',label: 'Tax, Shipping & Regional' },
+];
+
 interface CurrencyDisplayForm {
   enabled: boolean;
   baseCurrency: string;
@@ -13,6 +22,7 @@ interface CurrencyDisplayForm {
 
 interface AdminSettings extends SiteSettings {
   currencyDisplay: CurrencyDisplayForm;
+  pricingVisibility: { regions: { slug: string; label: string; showPrice: boolean }[] };
   quoteAutomation: {
     enabled: boolean;
     autoSend: boolean;
@@ -111,12 +121,21 @@ const defaults: AdminSettings = {
     marginPct: 2.5,
     showBothCurrencies: false,
   },
+  pricingVisibility: {
+    regions: [
+      { slug: 'ae', label: 'UAE (AED)', showPrice: true },
+      { slug: 'ke', label: 'Kenya (KES)', showPrice: true },
+      { slug: 'de', label: 'Germany (EUR)', showPrice: true },
+      { slug: 'global', label: 'Global (USD)', showPrice: true },
+    ],
+  },
 };
 
 export default function AdminSettings() {
   const [form, setForm] = useState<AdminSettings>(defaults);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<Tab>('general');
 
   useEffect(() => {
     api.get<Record<string, unknown>>('/admin/settings').then((response) => {
@@ -133,27 +152,47 @@ export default function AdminSettings() {
         shippingRates: { ...defaults.shippingRates, ...(value.shippingRates ?? {}) },
         localization: { ...defaults.localization, ...(value.localization ?? {}) },
         currencyDisplay: { ...defaults.currencyDisplay, ...((value.currencyDisplay as Partial<CurrencyDisplayForm>) ?? {}) },
+        pricingVisibility: (value.pricingVisibility as typeof defaults.pricingVisibility | undefined) ?? defaults.pricingVisibility,
       });
     }).catch(() => undefined);
   }, []);
 
-  async function save() {
-    setBusy(true);
-    try {
+  const SAVE_BY_TAB: Record<Tab, () => Promise<void>> = {
+    general: async () => {
       await Promise.all([
         api.put('/admin/settings/announcementBar', { value: form.announcementBar }),
         api.put('/admin/settings/contact', { value: form.contact }),
         api.put('/admin/settings/trustBadges', { value: form.trustBadges }),
         api.put('/admin/settings/footer', { value: form.footer }),
         api.put('/admin/settings/offerPopup', { value: form.offerPopup }),
+      ]);
+    },
+    currency: async () => {
+      await api.put('/admin/settings/currencyDisplay', { value: form.currencyDisplay });
+    },
+    pricing: async () => {
+      await api.put('/admin/settings/pricingVisibility', { value: form.pricingVisibility });
+    },
+    quotes: async () => {
+      await Promise.all([
         api.put('/admin/settings/quoteAutomation', { value: form.quoteAutomation }),
         api.put('/admin/settings/orderDocuments', { value: form.orderDocuments }),
+      ]);
+    },
+    localization: async () => {
+      await Promise.all([
         api.put('/admin/settings/taxSettings', { value: form.taxSettings }),
         api.put('/admin/settings/shippingRates', { value: form.shippingRates }),
         api.put('/admin/settings/localization', { value: form.localization }),
-        api.put('/admin/settings/currencyDisplay', { value: form.currencyDisplay }),
       ]);
-      setMessage('Site settings saved and available to the storefront.');
+    },
+  };
+
+  async function save() {
+    setBusy(true);
+    try {
+      await SAVE_BY_TAB[tab]();
+      setMessage('Settings saved.');
     } catch (error) {
       setMessage((error as Error).message);
     } finally {
@@ -167,300 +206,234 @@ export default function AdminSettings() {
         <div>
           <div className="section-eyebrow">CMS</div>
           <h1 className="mt-1 text-3xl font-extrabold">Site Settings</h1>
-          <p className="text-sm text-brand-gray">Storefront content and automatic quotation delivery controls.</p>
+          <p className="text-sm text-brand-gray">Storefront content, pricing, currency and automation controls.</p>
         </div>
-        <button className="btn-primary" disabled={busy} onClick={() => void save()}>{busy ? 'Saving...' : 'Save settings'}</button>
+        <button className="btn-primary" disabled={busy} onClick={() => void save()}>{busy ? 'Saving...' : `Save ${TABS.find((t) => t.id === tab)?.label}`}</button>
       </header>
       {message && <div className="card p-3 mb-4 text-sm">{message}</div>}
 
-      <div className="grid lg:grid-cols-2 gap-4">
-        <section className="card p-6 space-y-3">
-          <h2 className="font-extrabold">Announcement bar</h2>
-          <label className="text-sm flex gap-2 items-center"><input type="checkbox" checked={form.announcementBar.enabled} onChange={(event) => setForm({ ...form, announcementBar: { ...form.announcementBar, enabled: event.target.checked } })} /> Visible on storefront</label>
-          <label className="block text-xs font-bold uppercase text-brand-gray">Messages, one per line</label>
-          <textarea className="input min-h-[140px]" value={form.announcementBar.items.join('\n')} onChange={(event) => setForm({ ...form, announcementBar: { ...form.announcementBar, items: event.target.value.split('\n').filter(Boolean) } })} />
-        </section>
-
-        <section className="card p-6 space-y-3">
-          <h2 className="font-extrabold">Contact</h2>
-          {(['phone', 'whatsapp', 'email', 'salesEmail', 'headquarters'] as const).map((key) => (
-            <label key={key} className="block">
-              <span className="text-xs font-bold uppercase text-brand-gray">{key}</span>
-              <input className="input mt-1" value={form.contact[key]} onChange={(event) => setForm({ ...form, contact: { ...form.contact, [key]: event.target.value } })} />
-            </label>
-          ))}
-        </section>
-
-        <section className="card p-6 space-y-3">
-          <h2 className="font-extrabold">Trust badges</h2>
-          {form.trustBadges.map((badge, index) => (
-            <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2">
-              <input className="input" value={badge.label} placeholder="Label" onChange={(event) => {
-                const next = [...form.trustBadges];
-                next[index] = { ...badge, label: event.target.value };
-                setForm({ ...form, trustBadges: next });
-              }} />
-              <input className="input" value={badge.image ?? ''} placeholder="/img/icons/..." onChange={(event) => {
-                const next = [...form.trustBadges];
-                next[index] = { ...badge, image: event.target.value };
-                setForm({ ...form, trustBadges: next });
-              }} />
-              <button className="btn-ghost" onClick={() => setForm({ ...form, trustBadges: form.trustBadges.filter((_, i) => i !== index) })}>Remove</button>
-            </div>
-          ))}
-          <button className="btn-outline btn-sm" onClick={() => setForm({ ...form, trustBadges: [...form.trustBadges, { label: '' }] })}>+ Badge</button>
-        </section>
-
-        <section className="card p-6 space-y-3">
-          <h2 className="font-extrabold">Footer</h2>
-          <label className="block text-xs font-bold uppercase text-brand-gray">Description</label>
-          <textarea className="input min-h-[80px]" value={form.footer.description} onChange={(event) => setForm({ ...form, footer: { ...form.footer, description: event.target.value } })} />
-          <label className="block text-xs font-bold uppercase text-brand-gray">Certifications, comma-separated</label>
-          <input className="input" value={form.footer.certifications.join(', ')} onChange={(event) => setForm({ ...form, footer: { ...form.footer, certifications: event.target.value.split(',').map((item) => item.trim()).filter(Boolean) } })} />
-          {['linkedin', 'instagram', 'youtube', 'whatsapp'].map((network) => (
-            <input key={network} className="input" placeholder={`${network} URL`} value={form.footer.social[network] ?? ''} onChange={(event) => setForm({ ...form, footer: { ...form.footer, social: { ...form.footer.social, [network]: event.target.value } } })} />
-          ))}
-        </section>
-
-        <section className="card p-6 space-y-3 lg:col-span-2">
-          <div>
-            <h2 className="font-extrabold">Offer popup</h2>
-            <p className="mt-1 text-xs text-brand-gray">Optional storefront modal for promotions, RFQ nudges or campaigns.</p>
-          </div>
-          <label className="text-sm flex gap-2 items-center"><input type="checkbox" checked={form.offerPopup.enabled} onChange={(event) => setForm({ ...form, offerPopup: { ...form.offerPopup, enabled: event.target.checked } })} /> Enable popup</label>
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="block"><span className="text-xs font-bold uppercase text-brand-gray">Title</span><input className="input mt-1" value={form.offerPopup.title} onChange={(event) => setForm({ ...form, offerPopup: { ...form.offerPopup, title: event.target.value } })} /></label>
-            <label className="block"><span className="text-xs font-bold uppercase text-brand-gray">CTA label</span><input className="input mt-1" value={form.offerPopup.ctaLabel} onChange={(event) => setForm({ ...form, offerPopup: { ...form.offerPopup, ctaLabel: event.target.value } })} /></label>
-            <label className="block"><span className="text-xs font-bold uppercase text-brand-gray">CTA URL</span><input className="input mt-1" value={form.offerPopup.ctaUrl} onChange={(event) => setForm({ ...form, offerPopup: { ...form.offerPopup, ctaUrl: event.target.value } })} /></label>
-            <label className="block"><span className="text-xs font-bold uppercase text-brand-gray">Frequency hours</span><input type="number" min={1} max={720} className="input mt-1" value={form.offerPopup.frequencyHours} onChange={(event) => setForm({ ...form, offerPopup: { ...form.offerPopup, frequencyHours: Number(event.target.value) } })} /></label>
-            <label className="block md:col-span-2"><span className="text-xs font-bold uppercase text-brand-gray">Body</span><textarea className="input mt-1 min-h-[80px]" value={form.offerPopup.body} onChange={(event) => setForm({ ...form, offerPopup: { ...form.offerPopup, body: event.target.value } })} /></label>
-          </div>
-        </section>
-
-        <section className="card p-6 space-y-3 lg:col-span-2">
-          <div>
-            <h2 className="font-extrabold">Automatic quotations</h2>
-            <p className="mt-1 text-xs text-brand-gray">Automatically price catalog RFQs and email the formal PDF below the approval threshold.</p>
-          </div>
-          <div className="flex flex-wrap gap-6">
-            <label className="text-sm flex gap-2 items-center"><input type="checkbox" checked={form.quoteAutomation.enabled} onChange={(event) => setForm({ ...form, quoteAutomation: { ...form.quoteAutomation, enabled: event.target.checked } })} /> Enable automatic pricing</label>
-            <label className="text-sm flex gap-2 items-center"><input type="checkbox" checked={form.quoteAutomation.autoSend} onChange={(event) => setForm({ ...form, quoteAutomation: { ...form.quoteAutomation, autoSend: event.target.checked } })} /> Send qualifying quotations automatically</label>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="block">
-              <span className="text-xs font-bold uppercase text-brand-gray">Auto-send maximum value</span>
-              <input type="number" min={0} className="input mt-1" value={form.quoteAutomation.maxAutoValue} onChange={(event) => setForm({ ...form, quoteAutomation: { ...form.quoteAutomation, maxAutoValue: Number(event.target.value) } })} />
-            </label>
-            <label className="block">
-              <span className="text-xs font-bold uppercase text-brand-gray">Validity days</span>
-              <input type="number" min={1} max={90} className="input mt-1" value={form.quoteAutomation.validityDays} onChange={(event) => setForm({ ...form, quoteAutomation: { ...form.quoteAutomation, validityDays: Number(event.target.value) } })} />
-            </label>
-          </div>
-          <div className="space-y-2">
-            <div className="text-xs font-bold uppercase text-brand-gray">Quantity discount tiers</div>
-            {form.quoteAutomation.discountTiers.map((tier, index) => (
-              <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2">
-                <input type="number" min={1} className="input" aria-label="Minimum quantity" value={tier.minQuantity} onChange={(event) => {
-                  const next = [...form.quoteAutomation.discountTiers];
-                  next[index] = { ...tier, minQuantity: Number(event.target.value) };
-                  setForm({ ...form, quoteAutomation: { ...form.quoteAutomation, discountTiers: next } });
-                }} />
-                <input type="number" min={0} max={50} className="input" aria-label="Discount percent" value={tier.discountPercent} onChange={(event) => {
-                  const next = [...form.quoteAutomation.discountTiers];
-                  next[index] = { ...tier, discountPercent: Number(event.target.value) };
-                  setForm({ ...form, quoteAutomation: { ...form.quoteAutomation, discountTiers: next } });
-                }} />
-                <button className="btn-ghost" onClick={() => setForm({ ...form, quoteAutomation: { ...form.quoteAutomation, discountTiers: form.quoteAutomation.discountTiers.filter((_, i) => i !== index) } })}>Remove</button>
-              </div>
-            ))}
-            <button className="btn-outline btn-sm" onClick={() => setForm({ ...form, quoteAutomation: { ...form.quoteAutomation, discountTiers: [...form.quoteAutomation.discountTiers, { minQuantity: 1, discountPercent: 0 }] } })}>+ Tier</button>
-          </div>
-        </section>
-
-        <section className="card p-6 space-y-3 lg:col-span-2">
-          <div>
-            <h2 className="font-extrabold">Order documents</h2>
-            <p className="mt-1 text-xs text-brand-gray">Controls automatic PDF invoice and courier receipt generation for customer orders.</p>
-          </div>
-          <div className="flex flex-wrap gap-6">
-            <label className="text-sm flex gap-2 items-center"><input type="checkbox" checked={form.orderDocuments.autoGenerateInvoiceOnOrder} onChange={(event) => setForm({ ...form, orderDocuments: { ...form.orderDocuments, autoGenerateInvoiceOnOrder: event.target.checked } })} /> Auto-generate invoice on order</label>
-            <label className="text-sm flex gap-2 items-center"><input type="checkbox" checked={form.orderDocuments.autoGenerateCourierReceiptOnShipment} onChange={(event) => setForm({ ...form, orderDocuments: { ...form.orderDocuments, autoGenerateCourierReceiptOnShipment: event.target.checked } })} /> Auto-generate courier receipt on shipment</label>
-            <label className="text-sm flex gap-2 items-center"><input type="checkbox" checked={form.orderDocuments.showPricesOnCourierReceipt} onChange={(event) => setForm({ ...form, orderDocuments: { ...form.orderDocuments, showPricesOnCourierReceipt: event.target.checked } })} /> Show prices on courier receipt</label>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="block">
-              <span className="text-xs font-bold uppercase text-brand-gray">Default courier</span>
-              <input className="input mt-1" value={form.orderDocuments.defaultCourier} onChange={(event) => setForm({ ...form, orderDocuments: { ...form.orderDocuments, defaultCourier: event.target.value } })} />
-            </label>
-            <label className="block md:col-span-2">
-              <span className="text-xs font-bold uppercase text-brand-gray">Courier receipt footer</span>
-              <textarea className="input mt-1 min-h-[80px]" value={form.orderDocuments.receiptFooter} onChange={(event) => setForm({ ...form, orderDocuments: { ...form.orderDocuments, receiptFooter: event.target.value } })} />
-            </label>
-          </div>
-        </section>
-
-        <section className="card p-6 space-y-3 lg:col-span-2">
-          <div>
-            <h2 className="font-extrabold">Tax settings</h2>
-            <p className="mt-1 text-xs text-brand-gray">Used by cart, checkout, quotations and invoices when calculating regional tax.</p>
-          </div>
-          <div className="space-y-2">
-            {form.taxSettings.countryRates.map((row, index) => (
-              <div key={index} className="grid gap-2 md:grid-cols-[90px_1fr_120px_120px_120px_auto]">
-                <input className="input" value={row.countryCode} placeholder="AE" onChange={(event) => {
-                  const next = [...form.taxSettings.countryRates];
-                  next[index] = { ...row, countryCode: event.target.value.toUpperCase() };
-                  setForm({ ...form, taxSettings: { countryRates: next } });
-                }} />
-                <input className="input" value={row.taxClass} placeholder="standard" onChange={(event) => {
-                  const next = [...form.taxSettings.countryRates];
-                  next[index] = { ...row, taxClass: event.target.value };
-                  setForm({ ...form, taxSettings: { countryRates: next } });
-                }} />
-                <input type="number" min={0} max={100} className="input" value={row.taxRate} onChange={(event) => {
-                  const next = [...form.taxSettings.countryRates];
-                  next[index] = { ...row, taxRate: Number(event.target.value) };
-                  setForm({ ...form, taxSettings: { countryRates: next } });
-                }} />
-                <input className="input" value={row.taxLabel} placeholder="VAT" onChange={(event) => {
-                  const next = [...form.taxSettings.countryRates];
-                  next[index] = { ...row, taxLabel: event.target.value };
-                  setForm({ ...form, taxSettings: { countryRates: next } });
-                }} />
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={row.isInclusive} onChange={(event) => {
-                  const next = [...form.taxSettings.countryRates];
-                  next[index] = { ...row, isInclusive: event.target.checked };
-                  setForm({ ...form, taxSettings: { countryRates: next } });
-                }} /> Inclusive</label>
-                <button className="btn-ghost" onClick={() => setForm({ ...form, taxSettings: { countryRates: form.taxSettings.countryRates.filter((_, i) => i !== index) } })}>Remove</button>
-              </div>
-            ))}
-          </div>
-          <button className="btn-outline btn-sm" onClick={() => setForm({ ...form, taxSettings: { countryRates: [...form.taxSettings.countryRates, { countryCode: 'AE', taxClass: 'standard', taxRate: 0, taxLabel: 'VAT', isInclusive: false }] } })}>+ Tax country</button>
-        </section>
-
-        <section className="card p-6 space-y-3 lg:col-span-2">
-          <div>
-            <h2 className="font-extrabold">Shipping price settings</h2>
-            <p className="mt-1 text-xs text-brand-gray">Flat rate wins when filled. Otherwise checkout uses base rate + product weight x per-kg rate. Free-over can make shipping zero.</p>
-          </div>
-          <div className="space-y-2">
-            {form.shippingRates.countryRates.map((row, index) => (
-              <div key={index} className="grid gap-2 md:grid-cols-[80px_110px_110px_110px_110px_1fr_auto]">
-                <input className="input" value={row.countryCode} placeholder="AE" onChange={(event) => {
-                  const next = [...form.shippingRates.countryRates];
-                  next[index] = { ...row, countryCode: event.target.value.toUpperCase() };
-                  setForm({ ...form, shippingRates: { countryRates: next } });
-                }} />
-                <NumberInput value={row.flatRate} placeholder="Flat" onChange={(value) => {
-                  const next = [...form.shippingRates.countryRates];
-                  next[index] = { ...row, flatRate: value };
-                  setForm({ ...form, shippingRates: { countryRates: next } });
-                }} />
-                <NumberInput value={row.freeOver} placeholder="Free over" onChange={(value) => {
-                  const next = [...form.shippingRates.countryRates];
-                  next[index] = { ...row, freeOver: value };
-                  setForm({ ...form, shippingRates: { countryRates: next } });
-                }} />
-                <NumberInput value={row.baseRate} placeholder="Base" onChange={(value) => {
-                  const next = [...form.shippingRates.countryRates];
-                  next[index] = { ...row, baseRate: value };
-                  setForm({ ...form, shippingRates: { countryRates: next } });
-                }} />
-                <NumberInput value={row.perKgRate} placeholder="Per kg" onChange={(value) => {
-                  const next = [...form.shippingRates.countryRates];
-                  next[index] = { ...row, perKgRate: value };
-                  setForm({ ...form, shippingRates: { countryRates: next } });
-                }} />
-                <input className="input" value={row.estimatedDays ?? ''} placeholder="2-5 business days" onChange={(event) => {
-                  const next = [...form.shippingRates.countryRates];
-                  next[index] = { ...row, estimatedDays: event.target.value };
-                  setForm({ ...form, shippingRates: { countryRates: next } });
-                }} />
-                <button className="btn-ghost" onClick={() => setForm({ ...form, shippingRates: { countryRates: form.shippingRates.countryRates.filter((_, i) => i !== index) } })}>Remove</button>
-              </div>
-            ))}
-          </div>
-          <button className="btn-outline btn-sm" onClick={() => setForm({ ...form, shippingRates: { countryRates: [...form.shippingRates.countryRates, { countryCode: 'AE', flatRate: 0, estimatedDays: '5-14 business days' }] } })}>+ Shipping country</button>
-        </section>
-
-        <section className="card p-6 space-y-3 lg:col-span-2">
-          <div>
-            <h2 className="font-extrabold">Localization</h2>
-            <p className="mt-1 text-xs text-brand-gray">Controls root country auto-detection and the storefront language selector. Translation content can be added later per CMS field.</p>
-          </div>
-          <label className="text-sm flex gap-2 items-center"><input type="checkbox" checked={form.localization.autoDetectCountry} onChange={(event) => setForm({ ...form, localization: { ...form.localization, autoDetectCountry: event.target.checked } })} /> Auto-detect country from IP headers on root URL</label>
-          <label className="block">
-            <span className="text-xs font-bold uppercase text-brand-gray">Default region</span>
-            <input className="input mt-1" value={form.localization.defaultRegion} onChange={(event) => setForm({ ...form, localization: { ...form.localization, defaultRegion: event.target.value } })} />
-          </label>
-          <label className="block">
-            <span className="text-xs font-bold uppercase text-brand-gray">Languages, one per line as code:label</span>
-            <textarea className="input mt-1 min-h-[90px]" value={form.localization.supportedLanguages.map((language) => `${language.code}:${language.label}`).join('\n')} onChange={(event) => setForm({
-              ...form,
-              localization: {
-                ...form.localization,
-                supportedLanguages: event.target.value.split('\n').map((line) => {
-                  const [code, ...label] = line.split(':');
-                  return { code: code.trim(), label: (label.join(':') || code).trim() };
-                }).filter((language) => language.code && language.label),
-              },
-            })} />
-          </label>
-        </section>
-
-        <section className="card p-6 space-y-4 lg:col-span-2">
-          <div>
-            <h2 className="font-extrabold">Currency display &amp; live exchange rates</h2>
-            <p className="mt-1 text-xs text-brand-gray">
-              When enabled, the storefront converts prices from your base currency (e.g. USD) to each
-              customer's local currency using real-time exchange rates from open.er-api.com, updated hourly.
-              Your margin is added on top of the mid-market rate so you always earn the spread.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-6">
-            <label className="flex items-center gap-2 text-sm font-semibold">
-              <input type="checkbox" checked={form.currencyDisplay.enabled} onChange={(event) => setForm({ ...form, currencyDisplay: { ...form.currencyDisplay, enabled: event.target.checked } })} />
-              Enable real-time currency conversion on storefront
-            </label>
-            <label className="flex items-center gap-2 text-sm font-semibold">
-              <input type="checkbox" checked={form.currencyDisplay.showBothCurrencies} onChange={(event) => setForm({ ...form, currencyDisplay: { ...form.currencyDisplay, showBothCurrencies: event.target.checked } })} />
-              Show both local and base currency price (e.g. "AED 367 (USD 100)")
-            </label>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="block">
-              <span className="text-xs font-bold uppercase text-brand-gray">Base currency (prices are stored in this currency)</span>
-              <select className="input mt-1" value={form.currencyDisplay.baseCurrency} onChange={(event) => setForm({ ...form, currencyDisplay: { ...form.currencyDisplay, baseCurrency: event.target.value } })}>
-                <option value="USD">USD — US Dollar</option>
-                <option value="AED">AED — UAE Dirham</option>
-                <option value="EUR">EUR — Euro</option>
-                <option value="GBP">GBP — British Pound</option>
-                <option value="INR">INR — Indian Rupee</option>
-              </select>
-            </label>
-            <label className="block">
-              <span className="text-xs font-bold uppercase text-brand-gray">Your margin on top of live rate (%)</span>
-              <input
-                type="number"
-                min={0}
-                max={20}
-                step={0.1}
-                className="input mt-1"
-                value={form.currencyDisplay.marginPct}
-                onChange={(event) => setForm({ ...form, currencyDisplay: { ...form.currencyDisplay, marginPct: Number(event.target.value) } })}
-              />
-              <span className="mt-1 block text-xs text-brand-gray">
-                e.g. 2.5% → a $100 product shows as AED 379 instead of AED 367 (rate × 1.025)
-              </span>
-            </label>
-          </div>
-
-          <LiveRatesPreview enabled={form.currencyDisplay.enabled} />
-        </section>
+      {/* Tab bar */}
+      <div className="mb-6 flex gap-1 overflow-x-auto border-b border-gray-200">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => { setTab(t.id); setMessage(null); }}
+            className={`shrink-0 px-4 py-2.5 text-sm font-bold transition-colors ${tab === t.id ? 'border-b-2 border-brand-blue text-brand-blue' : 'text-brand-gray hover:text-brand-dark'}`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
+
+      {/* ── GENERAL TAB ── */}
+      {tab === 'general' && (
+        <div className="grid lg:grid-cols-2 gap-4">
+          <section className="card p-6 space-y-3">
+            <h2 className="font-extrabold">Announcement bar</h2>
+            <label className="text-sm flex gap-2 items-center"><input type="checkbox" checked={form.announcementBar.enabled} onChange={(event) => setForm({ ...form, announcementBar: { ...form.announcementBar, enabled: event.target.checked } })} /> Visible on storefront</label>
+            <label className="block text-xs font-bold uppercase text-brand-gray">Messages, one per line</label>
+            <textarea className="input min-h-[140px]" value={form.announcementBar.items.join('\n')} onChange={(event) => setForm({ ...form, announcementBar: { ...form.announcementBar, items: event.target.value.split('\n').filter(Boolean) } })} />
+          </section>
+          <section className="card p-6 space-y-3">
+            <h2 className="font-extrabold">Contact</h2>
+            {(['phone', 'whatsapp', 'email', 'salesEmail', 'headquarters'] as const).map((key) => (
+              <label key={key} className="block">
+                <span className="text-xs font-bold uppercase text-brand-gray">{key}</span>
+                <input className="input mt-1" value={form.contact[key]} onChange={(event) => setForm({ ...form, contact: { ...form.contact, [key]: event.target.value } })} />
+              </label>
+            ))}
+          </section>
+          <section className="card p-6 space-y-3">
+            <h2 className="font-extrabold">Trust badges</h2>
+            {form.trustBadges.map((badge, index) => (
+              <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                <input className="input" value={badge.label} placeholder="Label" onChange={(event) => { const next = [...form.trustBadges]; next[index] = { ...badge, label: event.target.value }; setForm({ ...form, trustBadges: next }); }} />
+                <input className="input" value={badge.image ?? ''} placeholder="/img/icons/..." onChange={(event) => { const next = [...form.trustBadges]; next[index] = { ...badge, image: event.target.value }; setForm({ ...form, trustBadges: next }); }} />
+                <button className="btn-ghost" onClick={() => setForm({ ...form, trustBadges: form.trustBadges.filter((_, i) => i !== index) })}>Remove</button>
+              </div>
+            ))}
+            <button className="btn-outline btn-sm" onClick={() => setForm({ ...form, trustBadges: [...form.trustBadges, { label: '' }] })}>+ Badge</button>
+          </section>
+          <section className="card p-6 space-y-3">
+            <h2 className="font-extrabold">Footer</h2>
+            <label className="block text-xs font-bold uppercase text-brand-gray">Description</label>
+            <textarea className="input min-h-[80px]" value={form.footer.description} onChange={(event) => setForm({ ...form, footer: { ...form.footer, description: event.target.value } })} />
+            <label className="block text-xs font-bold uppercase text-brand-gray">Certifications, comma-separated</label>
+            <input className="input" value={form.footer.certifications.join(', ')} onChange={(event) => setForm({ ...form, footer: { ...form.footer, certifications: event.target.value.split(',').map((item) => item.trim()).filter(Boolean) } })} />
+            {['linkedin', 'instagram', 'youtube', 'whatsapp'].map((network) => (
+              <input key={network} className="input" placeholder={`${network} URL`} value={form.footer.social[network] ?? ''} onChange={(event) => setForm({ ...form, footer: { ...form.footer, social: { ...form.footer.social, [network]: event.target.value } } })} />
+            ))}
+          </section>
+          <section className="card p-6 space-y-3 lg:col-span-2">
+            <div><h2 className="font-extrabold">Offer popup</h2><p className="mt-1 text-xs text-brand-gray">Optional storefront modal for promotions, RFQ nudges or campaigns.</p></div>
+            <label className="text-sm flex gap-2 items-center"><input type="checkbox" checked={form.offerPopup.enabled} onChange={(event) => setForm({ ...form, offerPopup: { ...form.offerPopup, enabled: event.target.checked } })} /> Enable popup</label>
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="block"><span className="text-xs font-bold uppercase text-brand-gray">Title</span><input className="input mt-1" value={form.offerPopup.title} onChange={(event) => setForm({ ...form, offerPopup: { ...form.offerPopup, title: event.target.value } })} /></label>
+              <label className="block"><span className="text-xs font-bold uppercase text-brand-gray">CTA label</span><input className="input mt-1" value={form.offerPopup.ctaLabel} onChange={(event) => setForm({ ...form, offerPopup: { ...form.offerPopup, ctaLabel: event.target.value } })} /></label>
+              <label className="block"><span className="text-xs font-bold uppercase text-brand-gray">CTA URL</span><input className="input mt-1" value={form.offerPopup.ctaUrl} onChange={(event) => setForm({ ...form, offerPopup: { ...form.offerPopup, ctaUrl: event.target.value } })} /></label>
+              <label className="block"><span className="text-xs font-bold uppercase text-brand-gray">Frequency hours</span><input type="number" min={1} max={720} className="input mt-1" value={form.offerPopup.frequencyHours} onChange={(event) => setForm({ ...form, offerPopup: { ...form.offerPopup, frequencyHours: Number(event.target.value) } })} /></label>
+              <label className="block md:col-span-2"><span className="text-xs font-bold uppercase text-brand-gray">Body</span><textarea className="input mt-1 min-h-[80px]" value={form.offerPopup.body} onChange={(event) => setForm({ ...form, offerPopup: { ...form.offerPopup, body: event.target.value } })} /></label>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* ── CURRENCY TAB ── */}
+      {tab === 'currency' && (
+        <div className="space-y-4">
+          <section className="card p-6 space-y-4">
+            <div><h2 className="font-extrabold">Currency display &amp; live exchange rates</h2><p className="mt-1 text-xs text-brand-gray">When enabled, the storefront converts prices from your base currency to each customer's local currency using real-time rates from open.er-api.com, updated hourly. Your margin is added on top of the mid-market rate.</p></div>
+            <div className="flex flex-wrap gap-6">
+              <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={form.currencyDisplay.enabled} onChange={(event) => setForm({ ...form, currencyDisplay: { ...form.currencyDisplay, enabled: event.target.checked } })} /> Enable real-time currency conversion on storefront</label>
+              <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={form.currencyDisplay.showBothCurrencies} onChange={(event) => setForm({ ...form, currencyDisplay: { ...form.currencyDisplay, showBothCurrencies: event.target.checked } })} /> Show both local and base currency price (e.g. "AED 367 (USD 100)")</label>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="text-xs font-bold uppercase text-brand-gray">Base currency (prices are stored in this currency)</span>
+                <select className="input mt-1" value={form.currencyDisplay.baseCurrency} onChange={(event) => setForm({ ...form, currencyDisplay: { ...form.currencyDisplay, baseCurrency: event.target.value } })}>
+                  <option value="USD">USD — US Dollar</option>
+                  <option value="AED">AED — UAE Dirham</option>
+                  <option value="EUR">EUR — Euro</option>
+                  <option value="GBP">GBP — British Pound</option>
+                  <option value="INR">INR — Indian Rupee</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs font-bold uppercase text-brand-gray">Your margin on top of live rate (%)</span>
+                <input type="number" min={0} max={20} step={0.1} className="input mt-1" value={form.currencyDisplay.marginPct} onChange={(event) => setForm({ ...form, currencyDisplay: { ...form.currencyDisplay, marginPct: Number(event.target.value) } })} />
+                <span className="mt-1 block text-xs text-brand-gray">e.g. 2.5% → a $100 product shows as AED 379 instead of AED 367 (rate × 1.025)</span>
+              </label>
+            </div>
+            <LiveRatesPreview enabled={form.currencyDisplay.enabled} />
+          </section>
+        </div>
+      )}
+
+      {/* ── PRICING VISIBILITY TAB ── */}
+      {tab === 'pricing' && (
+        <div className="space-y-4">
+          <section className="card p-6 space-y-4">
+            <div>
+              <h2 className="font-extrabold">Price visibility per region</h2>
+              <p className="mt-1 text-xs text-brand-gray">
+                Uncheck a region to hide all prices for customers from that country — they will see <strong>"Request Quote"</strong> instead of any price.
+                Use this for regions where you only do B2B quote-based sales.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {form.pricingVisibility.regions.map((row, index) => (
+                <div key={row.slug} className="flex items-center justify-between gap-4 rounded-xl border border-gray-100 p-4">
+                  <div>
+                    <div className="font-semibold">{row.label}</div>
+                    <div className="text-xs text-brand-gray font-mono">{row.slug}</div>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={row.showPrice}
+                      onChange={(event) => {
+                        const next = [...form.pricingVisibility.regions];
+                        next[index] = { ...row, showPrice: event.target.checked };
+                        setForm({ ...form, pricingVisibility: { regions: next } });
+                      }}
+                    />
+                    {row.showPrice ? <span className="text-status-success">Show price</span> : <span className="text-status-error">Quote only</span>}
+                  </label>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-brand-gray">These settings apply to all product listing pages, product detail pages and search results.</p>
+          </section>
+        </div>
+      )}
+
+      {/* ── QUOTES & ORDERS TAB ── */}
+      {tab === 'quotes' && (
+        <div className="space-y-4">
+          <section className="card p-6 space-y-3">
+            <div><h2 className="font-extrabold">Automatic quotations</h2><p className="mt-1 text-xs text-brand-gray">Automatically price catalog RFQs and email the formal PDF below the approval threshold.</p></div>
+            <div className="flex flex-wrap gap-6">
+              <label className="text-sm flex gap-2 items-center"><input type="checkbox" checked={form.quoteAutomation.enabled} onChange={(event) => setForm({ ...form, quoteAutomation: { ...form.quoteAutomation, enabled: event.target.checked } })} /> Enable automatic pricing</label>
+              <label className="text-sm flex gap-2 items-center"><input type="checkbox" checked={form.quoteAutomation.autoSend} onChange={(event) => setForm({ ...form, quoteAutomation: { ...form.quoteAutomation, autoSend: event.target.checked } })} /> Send qualifying quotations automatically</label>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="block"><span className="text-xs font-bold uppercase text-brand-gray">Auto-send maximum value</span><input type="number" min={0} className="input mt-1" value={form.quoteAutomation.maxAutoValue} onChange={(event) => setForm({ ...form, quoteAutomation: { ...form.quoteAutomation, maxAutoValue: Number(event.target.value) } })} /></label>
+              <label className="block"><span className="text-xs font-bold uppercase text-brand-gray">Validity days</span><input type="number" min={1} max={90} className="input mt-1" value={form.quoteAutomation.validityDays} onChange={(event) => setForm({ ...form, quoteAutomation: { ...form.quoteAutomation, validityDays: Number(event.target.value) } })} /></label>
+            </div>
+            <div className="space-y-2">
+              <div className="text-xs font-bold uppercase text-brand-gray">Quantity discount tiers</div>
+              {form.quoteAutomation.discountTiers.map((tier, index) => (
+                <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                  <input type="number" min={1} className="input" aria-label="Minimum quantity" value={tier.minQuantity} onChange={(event) => { const next = [...form.quoteAutomation.discountTiers]; next[index] = { ...tier, minQuantity: Number(event.target.value) }; setForm({ ...form, quoteAutomation: { ...form.quoteAutomation, discountTiers: next } }); }} />
+                  <input type="number" min={0} max={50} className="input" aria-label="Discount percent" value={tier.discountPercent} onChange={(event) => { const next = [...form.quoteAutomation.discountTiers]; next[index] = { ...tier, discountPercent: Number(event.target.value) }; setForm({ ...form, quoteAutomation: { ...form.quoteAutomation, discountTiers: next } }); }} />
+                  <button className="btn-ghost" onClick={() => setForm({ ...form, quoteAutomation: { ...form.quoteAutomation, discountTiers: form.quoteAutomation.discountTiers.filter((_, i) => i !== index) } })}>Remove</button>
+                </div>
+              ))}
+              <button className="btn-outline btn-sm" onClick={() => setForm({ ...form, quoteAutomation: { ...form.quoteAutomation, discountTiers: [...form.quoteAutomation.discountTiers, { minQuantity: 1, discountPercent: 0 }] } })}>+ Tier</button>
+            </div>
+          </section>
+          <section className="card p-6 space-y-3">
+            <div><h2 className="font-extrabold">Order documents</h2><p className="mt-1 text-xs text-brand-gray">Controls automatic PDF invoice and courier receipt generation for customer orders.</p></div>
+            <div className="flex flex-wrap gap-6">
+              <label className="text-sm flex gap-2 items-center"><input type="checkbox" checked={form.orderDocuments.autoGenerateInvoiceOnOrder} onChange={(event) => setForm({ ...form, orderDocuments: { ...form.orderDocuments, autoGenerateInvoiceOnOrder: event.target.checked } })} /> Auto-generate invoice on order</label>
+              <label className="text-sm flex gap-2 items-center"><input type="checkbox" checked={form.orderDocuments.autoGenerateCourierReceiptOnShipment} onChange={(event) => setForm({ ...form, orderDocuments: { ...form.orderDocuments, autoGenerateCourierReceiptOnShipment: event.target.checked } })} /> Auto-generate courier receipt on shipment</label>
+              <label className="text-sm flex gap-2 items-center"><input type="checkbox" checked={form.orderDocuments.showPricesOnCourierReceipt} onChange={(event) => setForm({ ...form, orderDocuments: { ...form.orderDocuments, showPricesOnCourierReceipt: event.target.checked } })} /> Show prices on courier receipt</label>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="block"><span className="text-xs font-bold uppercase text-brand-gray">Default courier</span><input className="input mt-1" value={form.orderDocuments.defaultCourier} onChange={(event) => setForm({ ...form, orderDocuments: { ...form.orderDocuments, defaultCourier: event.target.value } })} /></label>
+              <label className="block md:col-span-2"><span className="text-xs font-bold uppercase text-brand-gray">Courier receipt footer</span><textarea className="input mt-1 min-h-[80px]" value={form.orderDocuments.receiptFooter} onChange={(event) => setForm({ ...form, orderDocuments: { ...form.orderDocuments, receiptFooter: event.target.value } })} /></label>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* ── TAX, SHIPPING & REGIONAL TAB ── */}
+      {tab === 'localization' && (
+        <div className="space-y-4">
+          <section className="card p-6 space-y-3">
+            <div><h2 className="font-extrabold">Tax settings</h2><p className="mt-1 text-xs text-brand-gray">Used by cart, checkout, quotations and invoices when calculating regional tax.</p></div>
+            <div className="space-y-2">
+              {form.taxSettings.countryRates.map((row, index) => (
+                <div key={index} className="grid gap-2 md:grid-cols-[90px_1fr_120px_120px_120px_auto]">
+                  <input className="input" value={row.countryCode} placeholder="AE" onChange={(event) => { const next = [...form.taxSettings.countryRates]; next[index] = { ...row, countryCode: event.target.value.toUpperCase() }; setForm({ ...form, taxSettings: { countryRates: next } }); }} />
+                  <input className="input" value={row.taxClass} placeholder="standard" onChange={(event) => { const next = [...form.taxSettings.countryRates]; next[index] = { ...row, taxClass: event.target.value }; setForm({ ...form, taxSettings: { countryRates: next } }); }} />
+                  <input type="number" min={0} max={100} className="input" value={row.taxRate} onChange={(event) => { const next = [...form.taxSettings.countryRates]; next[index] = { ...row, taxRate: Number(event.target.value) }; setForm({ ...form, taxSettings: { countryRates: next } }); }} />
+                  <input className="input" value={row.taxLabel} placeholder="VAT" onChange={(event) => { const next = [...form.taxSettings.countryRates]; next[index] = { ...row, taxLabel: event.target.value }; setForm({ ...form, taxSettings: { countryRates: next } }); }} />
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={row.isInclusive} onChange={(event) => { const next = [...form.taxSettings.countryRates]; next[index] = { ...row, isInclusive: event.target.checked }; setForm({ ...form, taxSettings: { countryRates: next } }); }} /> Inclusive</label>
+                  <button className="btn-ghost" onClick={() => setForm({ ...form, taxSettings: { countryRates: form.taxSettings.countryRates.filter((_, i) => i !== index) } })}>Remove</button>
+                </div>
+              ))}
+            </div>
+            <button className="btn-outline btn-sm" onClick={() => setForm({ ...form, taxSettings: { countryRates: [...form.taxSettings.countryRates, { countryCode: 'AE', taxClass: 'standard', taxRate: 0, taxLabel: 'VAT', isInclusive: false }] } })}>+ Tax country</button>
+          </section>
+          <section className="card p-6 space-y-3">
+            <div><h2 className="font-extrabold">Shipping rates</h2><p className="mt-1 text-xs text-brand-gray">Flat rate wins when filled. Otherwise: base rate + weight × per-kg rate. Free-over threshold overrides to zero shipping.</p></div>
+            <div className="space-y-2">
+              {form.shippingRates.countryRates.map((row, index) => (
+                <div key={index} className="grid gap-2 md:grid-cols-[80px_110px_110px_110px_110px_1fr_auto]">
+                  <input className="input" value={row.countryCode} placeholder="AE" onChange={(event) => { const next = [...form.shippingRates.countryRates]; next[index] = { ...row, countryCode: event.target.value.toUpperCase() }; setForm({ ...form, shippingRates: { countryRates: next } }); }} />
+                  <NumberInput value={row.flatRate} placeholder="Flat" onChange={(value) => { const next = [...form.shippingRates.countryRates]; next[index] = { ...row, flatRate: value }; setForm({ ...form, shippingRates: { countryRates: next } }); }} />
+                  <NumberInput value={row.freeOver} placeholder="Free over" onChange={(value) => { const next = [...form.shippingRates.countryRates]; next[index] = { ...row, freeOver: value }; setForm({ ...form, shippingRates: { countryRates: next } }); }} />
+                  <NumberInput value={row.baseRate} placeholder="Base" onChange={(value) => { const next = [...form.shippingRates.countryRates]; next[index] = { ...row, baseRate: value }; setForm({ ...form, shippingRates: { countryRates: next } }); }} />
+                  <NumberInput value={row.perKgRate} placeholder="Per kg" onChange={(value) => { const next = [...form.shippingRates.countryRates]; next[index] = { ...row, perKgRate: value }; setForm({ ...form, shippingRates: { countryRates: next } }); }} />
+                  <input className="input" value={row.estimatedDays ?? ''} placeholder="2-5 business days" onChange={(event) => { const next = [...form.shippingRates.countryRates]; next[index] = { ...row, estimatedDays: event.target.value }; setForm({ ...form, shippingRates: { countryRates: next } }); }} />
+                  <button className="btn-ghost" onClick={() => setForm({ ...form, shippingRates: { countryRates: form.shippingRates.countryRates.filter((_, i) => i !== index) } })}>Remove</button>
+                </div>
+              ))}
+            </div>
+            <button className="btn-outline btn-sm" onClick={() => setForm({ ...form, shippingRates: { countryRates: [...form.shippingRates.countryRates, { countryCode: 'AE', flatRate: 0, estimatedDays: '5-14 business days' }] } })}>+ Shipping country</button>
+          </section>
+          <section className="card p-6 space-y-3">
+            <div><h2 className="font-extrabold">Localization</h2><p className="mt-1 text-xs text-brand-gray">Controls root country auto-detection and the storefront language selector.</p></div>
+            <label className="text-sm flex gap-2 items-center"><input type="checkbox" checked={form.localization.autoDetectCountry} onChange={(event) => setForm({ ...form, localization: { ...form.localization, autoDetectCountry: event.target.checked } })} /> Auto-detect country from IP headers on root URL</label>
+            <label className="block"><span className="text-xs font-bold uppercase text-brand-gray">Default region</span><input className="input mt-1" value={form.localization.defaultRegion} onChange={(event) => setForm({ ...form, localization: { ...form.localization, defaultRegion: event.target.value } })} /></label>
+            <label className="block">
+              <span className="text-xs font-bold uppercase text-brand-gray">Languages, one per line as code:label</span>
+              <textarea className="input mt-1 min-h-[90px]" value={form.localization.supportedLanguages.map((l) => `${l.code}:${l.label}`).join('\n')} onChange={(event) => setForm({ ...form, localization: { ...form.localization, supportedLanguages: event.target.value.split('\n').map((line) => { const [code, ...rest] = line.split(':'); return { code: code.trim(), label: (rest.join(':') || code).trim() }; }).filter((l) => l.code && l.label) } })} />
+            </label>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

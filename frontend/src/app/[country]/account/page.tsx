@@ -2,27 +2,38 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/useAuth';
 import { ACCOUNT_ICONS } from '@/lib/images';
 import { DynamicPromoBanner } from '@/components/ui/DynamicPromoBanner';
 import { useRouteParams } from '@/lib/useRouteParams';
+import { api } from '@/lib/api';
 
 export default function AccountDashboard({ params }: { params: Promise<{ country: string }> }) {
   const region = useRouteParams(params).country;
   const router = useRouter();
   const { user, isLoading, logout } = useAuth();
 
+  const [unreadCount, setUnreadCount] = useState(0);
+
   useEffect(() => { if (!isLoading && !user) router.push('/auth/login'); }, [isLoading, user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    api.get<{ count: number }>('/account/notifications/unread-count')
+      .then((r) => setUnreadCount(r.data.count))
+      .catch(() => undefined);
+  }, [user]);
+
   if (isLoading || !user) return <div className="container-ws py-16 text-center text-sm text-brand-gray">Loading…</div>;
 
   const tiles = [
-    { t: 'My Orders', href: `/${region}/account/orders`,    icon: ACCOUNT_ICONS.orders,    sub: 'Track and view past orders' },
-    { t: 'My Quotes', href: `/${region}/account/quotes`,    icon: ACCOUNT_ICONS.quotes,    sub: 'B2B RFQ history & offers' },
-    { t: 'Addresses', href: `/${region}/account/addresses`, icon: ACCOUNT_ICONS.addresses, sub: 'Manage shipping locations' },
-    { t: 'Wishlist',  href: `/${region}/account/wishlist`,  icon: ACCOUNT_ICONS.wishlist,  sub: 'Saved for later' },
-    { t: 'Profile',   href: `/${region}/account/profile`,   icon: ACCOUNT_ICONS.profile,   sub: 'Name, phone, email' },
-    { t: 'Security',  href: `/${region}/account/profile`,   icon: ACCOUNT_ICONS.security,  sub: 'Password & sessions' },
+    { t: 'My Orders', href: `/${region}/account/orders`,    icon: ACCOUNT_ICONS.orders,    sub: 'Track and view past orders', badge: 0 },
+    { t: 'My Quotes', href: `/${region}/account/quotes`,    icon: ACCOUNT_ICONS.quotes,    sub: 'B2B RFQ history & offers', badge: unreadCount },
+    { t: 'Addresses', href: `/${region}/account/addresses`, icon: ACCOUNT_ICONS.addresses, sub: 'Manage shipping locations', badge: 0 },
+    { t: 'Wishlist',  href: `/${region}/account/wishlist`,  icon: ACCOUNT_ICONS.wishlist,  sub: 'Saved for later', badge: 0 },
+    { t: 'Profile',   href: `/${region}/account/profile`,   icon: ACCOUNT_ICONS.profile,   sub: 'Name, phone, email', badge: 0 },
+    { t: 'Security',  href: `/${region}/account/profile`,   icon: ACCOUNT_ICONS.security,  sub: 'Password & sessions', badge: 0 },
   ];
 
   const isAdmin = user.role === 'admin' || user.role === 'super_admin';
@@ -78,10 +89,17 @@ export default function AccountDashboard({ params }: { params: Promise<{ country
         <h2 className="section-title mb-5">Your account</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {tiles.map((t) => (
-            <Link key={t.t} href={t.href} className="card card-hover p-5 group flex items-start gap-3">
+            <Link key={t.t} href={t.href} className="card card-hover p-5 group flex items-start gap-3 relative">
               <img src={t.icon} alt="" className="h-11 w-11 shrink-0" />
               <div>
-                <div className="font-bold group-hover:text-brand-blue">{t.t}</div>
+                <div className="font-bold group-hover:text-brand-blue flex items-center gap-2">
+                  {t.t}
+                  {t.badge > 0 && (
+                    <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-status-error px-1.5 text-[11px] font-bold text-white">
+                      {t.badge > 99 ? '99+' : t.badge}
+                    </span>
+                  )}
+                </div>
                 <div className="text-xs text-brand-gray mt-0.5">{t.sub}</div>
               </div>
             </Link>

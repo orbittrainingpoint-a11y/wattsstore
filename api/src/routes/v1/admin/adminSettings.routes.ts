@@ -81,6 +81,15 @@ const settingSchemas = {
     marginPct: z.number().min(0).max(20).default(2.5),
     showBothCurrencies: z.boolean().default(false),
   }),
+  // Per-region price visibility. When a region is listed here with showPrice=false,
+  // the storefront hides all prices and shows "Request Quote" instead.
+  pricingVisibility: z.object({
+    regions: z.array(z.object({
+      slug: z.string().min(2).max(20),        // ae, ke, de, global
+      label: z.string().min(1).max(80),
+      showPrice: z.boolean(),
+    })).max(20),
+  }),
 } as const;
 
 adminSettingsRoutes.get('/', asyncHandler(async (_req, res) => {

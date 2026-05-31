@@ -14,6 +14,7 @@ import { CategoryTile } from '@/components/catalog/CategoryTile';
 import { RecentlyViewedRail } from '@/components/catalog/RecentlyViewedRail';
 import { REGIONS } from '@/lib/utils';
 import { resolveCurrency } from '@/lib/country';
+import { loadSiteSettings, regionShowsPrice } from '@/lib/cms';
 import { DynamicPromoBanner } from '@/components/ui/DynamicPromoBanner';
 import { sanitizeRichHtml } from '@/lib/sanitizeHtml';
 import { ReviewForm } from '@/components/pdp/ReviewForm';
@@ -55,10 +56,12 @@ export default async function ProductPage({ params }: { params: Promise<{ countr
   const currency = await resolveCurrency(region);
   const product = await getProduct(region, slug);
   if (!product) notFound();
-  const [categories, reviewRows] = await Promise.all([
+  const [categories, reviewRows, siteSettings] = await Promise.all([
     api.get<ApiCategory[]>('/catalog/categories', { country: region }).then((res) => res.data).catch(() => []),
     api.get<ApiReview[]>(`/catalog/products/${slug}/reviews?limit=3&sort=helpful`, { country: region }).then((res) => res.data).catch(() => []),
+    loadSiteSettings(),
   ]);
+  const showPrice = regionShowsPrice(siteSettings, region);
   const reviews = reviewRows.map((review) => ({
     name: `${review.user.firstName} ${review.user.lastName.charAt(0)}.`,
     role: review.isVerifiedPurchase ? 'Verified customer' : 'Customer',
@@ -98,7 +101,7 @@ export default async function ProductPage({ params }: { params: Promise<{ countr
 
       {/* 1. PRODUCT OVERVIEW — gallery + sticky buy box */}
       <section className="container-ws py-6">
-        <ProductView product={product} region={region} currency={currency} />
+        <ProductView product={product} region={region} currency={currency} showPrice={showPrice} />
       </section>
 
       {/* 2. AT A GLANCE — quick highlights strip */}

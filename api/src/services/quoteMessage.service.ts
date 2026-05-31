@@ -1,5 +1,6 @@
 import { prisma } from '../config/database';
 import { AppError } from '../utils/AppError';
+import { notificationService } from './notification.service';
 
 export const quoteMessageService = {
   async listForCustomer(refNumber: string, userId: number) {
@@ -21,9 +22,48 @@ export const quoteMessageService = {
   },
 
   async createForSales(quoteId: number, userId: number, message: string, isInternal = false) {
-    const quote = await prisma.bulkQuote.findUnique({ where: { id: quoteId }, select: { id: true } });
+    const quote = await prisma.bulkQuote.findUnique({
+      where: { id: quoteId },
+      select: { id: true, quoteRefNumber: true, userId: true, contactEmail: true, contactName: true },
+    });
     if (!quote) throw AppError.notFound('QUOTE_NOT_FOUND', 'Quote not found.');
-    return this.create(quoteId, userId, isInternal ? 'internal' : 'sales', message, isInternal);
+    const created = await this.create(quoteId, userId, isInternal ? 'internal' : 'sales', message, isInternal);
+
+    // Notify the customer — skip internal notes
+    if (!isInternal && quote.contactEmail) {
+      // In-app notification (DB record the customer can see on their dashboard)
+      if (quote.userId) {
+        await prisma.notification.create({
+          data: {
+            userId: quote.userId,
+            channel: 'in_app',
+            notificationType: 'quote_message',
+            subject: `New message on quote ${quote.quoteRefNumber}`,
+            bodyPreview: message.slice(0, 200),
+            referenceId: quoteId,
+            referenceType: 'bulk_quote',
+            status: 'sent',
+          },
+        }).catch(() => undefined); // non-fatal
+      }
+      // Email notification
+      await notificationService.queueEmail({
+        template: 'quote_message',
+        recipient: quote.contactEmail,
+        subject: `Update on your quote ${quote.quoteRefNumber} — WattsStore`,
+        notificationType: 'quote_message',
+        userId: quote.userId ?? undefined,
+        referenceId: quoteId,
+        referenceType: 'bulk_quote',
+        data: {
+          name: quote.contactName,
+          refNumber: quote.quoteRefNumber,
+          message,
+          quoteUrl: `/account/quotes/${quote.quoteRefNumber}`,
+        },
+      });
+    }
+    return created;
   },
 
   async list(quoteId: number, includeInternal: boolean) {

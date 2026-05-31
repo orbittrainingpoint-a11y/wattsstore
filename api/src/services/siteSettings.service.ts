@@ -1,5 +1,9 @@
 import { prisma } from '../config/database';
 
+export interface PricingVisibilitySettings {
+  regions: { slug: string; label: string; showPrice: boolean }[];
+}
+
 export interface CurrencyDisplaySettings {
   enabled: boolean;
   baseCurrency: string;   // 'USD' — prices are shown converted from this base
@@ -39,6 +43,7 @@ export interface PublicSiteSettings {
     supportedLanguages: { code: string; label: string }[];
   };
   currencyDisplay: CurrencyDisplaySettings;
+  pricingVisibility: PricingVisibilitySettings;
 }
 
 const defaults: PublicSiteSettings = {
@@ -90,9 +95,17 @@ const defaults: PublicSiteSettings = {
     marginPct: 2.5,
     showBothCurrencies: false,
   },
+  pricingVisibility: {
+    regions: [
+      { slug: 'ae', label: 'UAE (AED)', showPrice: true },
+      { slug: 'ke', label: 'Kenya (KES)', showPrice: true },
+      { slug: 'de', label: 'Germany (EUR)', showPrice: true },
+      { slug: 'global', label: 'Global (USD)', showPrice: true },
+    ],
+  },
 };
 
-export const PUBLIC_SETTING_KEYS = ['announcementBar', 'contact', 'trustBadges', 'footer', 'offerPopup', 'localization', 'currencyDisplay'] as const;
+export const PUBLIC_SETTING_KEYS = ['announcementBar', 'contact', 'trustBadges', 'footer', 'offerPopup', 'localization', 'currencyDisplay', 'pricingVisibility'] as const;
 
 export const siteSettingsService = {
   async publicSettings(): Promise<PublicSiteSettings> {
@@ -106,6 +119,7 @@ export const siteSettingsService = {
       offerPopup: { ...defaults.offerPopup, ...(value.offerPopup ?? {}) },
       localization: { ...defaults.localization, ...(value.localization ?? {}) },
       currencyDisplay: { ...defaults.currencyDisplay, ...((value.currencyDisplay as Partial<CurrencyDisplaySettings>) ?? {}) },
+      pricingVisibility: (value.pricingVisibility as PricingVisibilitySettings | undefined) ?? defaults.pricingVisibility,
     };
   },
 

@@ -1,6 +1,7 @@
 /** Account (profile + addresses) and wishlist routes (PRD §8.5). Auth required. */
 import { Router, Request, Response } from 'express';
 import { accountService } from '../../services/account.service';
+import { prisma } from '../../config/database';
 import { requireAuth } from '../../middlewares/auth.middleware';
 import { validate } from '../../middlewares/validate.middleware';
 import { asyncHandler } from '../../utils/asyncHandler';
@@ -40,6 +41,39 @@ accountRoutes.post(
   asyncHandler(async (req, res) => {
     await accountService.setDefaultAddress(req.user!.id, Number(req.params.id));
     return ok(res, { isDefault: true });
+  }),
+);
+
+// ── In-app notifications ──
+accountRoutes.get(
+  '/notifications/unread-count',
+  asyncHandler(async (req, res) => {
+    const count = await prisma.notification.count({
+      where: { userId: req.user!.id, channel: 'in_app', status: 'sent', sentAt: null },
+    });
+    return ok(res, { count });
+  }),
+);
+accountRoutes.get(
+  '/notifications',
+  asyncHandler(async (req, res) => {
+    const items = await prisma.notification.findMany({
+      where: { userId: req.user!.id, channel: 'in_app' },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
+    return ok(res, items);
+  }),
+);
+// Mark notification read (sentAt = now signals "seen")
+accountRoutes.put(
+  '/notifications/:id/read',
+  asyncHandler(async (req, res) => {
+    await prisma.notification.updateMany({
+      where: { id: Number(req.params.id), userId: req.user!.id },
+      data: { sentAt: new Date() },
+    });
+    return ok(res, { read: true });
   }),
 );
 

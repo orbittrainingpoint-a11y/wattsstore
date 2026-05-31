@@ -22,11 +22,13 @@ export function ProductCard({
   region,
   currency,
   size = 'md',
+  showPrice = true,
 }: {
   product: TProductCard;
   region: string;
   currency: string;
   size?: 'sm' | 'md';
+  showPrice?: boolean;
 }) {
   const { addItem } = useCart(region);
   const { user } = useAuth();
@@ -159,7 +161,7 @@ export function ProductCard({
         </div>
 
         <div className="mt-2 flex items-baseline gap-2">
-          {product.isPriceVisible ? (
+          {product.isPriceVisible && showPrice ? (
             <>
               <span className="font-mono text-base font-bold text-brand-blue">{formatCurrency(displayPrice, displayCurrency)}</span>
               {displayCompare && displayPrice && displayCompare > displayPrice && (
@@ -177,7 +179,7 @@ export function ProductCard({
         <div className="mt-1 text-[11px] text-brand-gray">{product.variantCount} variant{product.variantCount === 1 ? '' : 's'} available</div>
 
         <div className="mt-3 flex gap-2">
-          {product.isPriceVisible ? (
+          {product.isPriceVisible && showPrice ? (
             <button className="btn-primary btn-sm flex-1" disabled={!product.inStock || busy} onClick={quickAddCart}>
               {busy ? '…' : msg ?? 'Add to Cart'}
             </button>

@@ -18,7 +18,7 @@ const ORIGIN_CLASS: Record<string, string> = { Indian: 'chip-india', Chinese: 'c
 const ORIGIN_LABEL: Record<string, string> = { Indian: '🇮🇳 India', Chinese: '🇨🇳 China', German: '🇩🇪 Germany' };
 
 /** PDP gallery + buy-box. Used by app/[country]/products/[slug]/page.tsx. */
-export function ProductView({ product, region, currency }: { product: ProductDetail; region: string; currency: string }) {
+export function ProductView({ product, region, currency, showPrice = true }: { product: ProductDetail; region: string; currency: string; showPrice?: boolean }) {
   const { addItem } = useCart(region);
   const { user } = useAuth();
   const router = useRouter();
@@ -151,7 +151,7 @@ export function ProductView({ product, region, currency }: { product: ProductDet
           </div>
 
           <div className="mt-5 flex items-baseline gap-3 flex-wrap">
-            {product.isPriceVisible ? (
+            {product.isPriceVisible && showPrice ? (
               <>
                 <span className="font-mono text-3xl font-extrabold text-brand-blue">{formatCurrency(pdpPrice(selected?.price), pdpCurrency)}</span>
                 {selected?.compareAtPrice && selected.price && selected.compareAtPrice > selected.price && (
@@ -206,13 +206,13 @@ export function ProductView({ product, region, currency }: { product: ProductDet
             >{wished ? '♥' : '♡'}</button>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            {product.isPriceVisible && (
+            {product.isPriceVisible && showPrice && (
               <button className="btn-primary btn-lg" disabled={!selected || selected.stockAvailable === 0} onClick={addToCart}>
                 🛒 Add to Cart
               </button>
             )}
             <button className="btn-yellow btn-lg" onClick={addToQuote}>📋 Add to Quote</button>
-            {product.isPriceVisible && <button className="btn-outline btn-lg col-span-2" disabled={!selected || selected.stockAvailable === 0} onClick={addToCart}>Buy Now</button>}
+            {product.isPriceVisible && showPrice && <button className="btn-outline btn-lg col-span-2" disabled={!selected || selected.stockAvailable === 0} onClick={addToCart}>Buy Now</button>}
           </div>
           {msg && <p className="mt-2 text-sm text-status-success font-medium">✓ {msg}</p>}
 
@@ -245,14 +245,14 @@ export function ProductView({ product, region, currency }: { product: ProductDet
       >
         <div className="flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            {product.isPriceVisible ? (
+            {product.isPriceVisible && showPrice ? (
               <div className="font-mono text-lg font-extrabold text-brand-blue truncate">{formatCurrency(pdpPrice(selected?.price), pdpCurrency)}</div>
             ) : (
               <div className="text-sm font-bold text-brand-gray">Contact for Price</div>
             )}
             <div className="text-[11px] text-brand-gray truncate">{selected?.variantSku ?? product.skuBase}</div>
           </div>
-          {product.isPriceVisible && (
+          {product.isPriceVisible && showPrice && (
             <button onClick={addToCart} disabled={!selected || selected.stockAvailable === 0} className="btn-primary">
               Add
             </button>
