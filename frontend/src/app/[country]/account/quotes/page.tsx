@@ -34,6 +34,8 @@ export default function QuotesPage({ params }: { params: Promise<{ country: stri
   useEffect(() => {
     if (user) {
       api.get<Quote[]>('/quotes', { country: region }).then((r) => setList(r.data)).catch(() => setList([])).finally(() => setLoading(false));
+      // Clear quote-message notification badge
+      api.put('/account/notifications/read-all').catch(() => undefined);
     }
   }, [user, region]);
 

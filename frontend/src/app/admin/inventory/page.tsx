@@ -84,14 +84,14 @@ export default function AdminInventory() {
     const adjustments = await api.get<Adjustment[]>(`/admin/inventory/${row.id}/adjustments`).then((r) => r.data).catch(() => []);
     setEditor({
       row,
-      retailPrice: row.retailPrice == null ? '' : String(row.retailPrice),
-      compareAtPrice: row.compareAtPrice == null ? '' : String(row.compareAtPrice),
-      costPrice: row.costPrice == null ? '' : String(row.costPrice),
+      retailPrice: row.retailPrice == null ? '' : String(Number(row.retailPrice)),
+      compareAtPrice: row.compareAtPrice == null ? '' : String(Number(row.compareAtPrice)),
+      costPrice: row.costPrice == null ? '' : String(Number(row.costPrice)),
       stockLowThreshold: String(row.stockLowThreshold ?? 5),
       stockOnHand: String(row.stockOnHand ?? 0),
       stockReserved: String(row.stockReserved ?? 0),
-      baseShippingCost: String(row.baseShippingCost ?? 0),
-      perKgAdder: String(row.perKgAdder ?? 0),
+      baseShippingCost: String(Number(row.baseShippingCost ?? 0)),
+      perKgAdder: String(Number(row.perKgAdder ?? 0)),
       isAvailable: row.isAvailable,
       adjustmentType: 'received',
       quantityDelta: '',
@@ -107,7 +107,7 @@ export default function AdminInventory() {
       await api.put(`/admin/inventory/${editor.row.id}`, {
         retailPrice: editor.retailPrice.trim() ? Number(editor.retailPrice) : null,
         compareAtPrice: editor.compareAtPrice.trim() ? Number(editor.compareAtPrice) : null,
-        costPrice: editor.costPrice.trim() ? Number(editor.costPrice) : null,
+        costPrice: Number(editor.costPrice || 0),        // NOT NULL in DB — default 0
         stockOnHand: Number(editor.stockOnHand || 0),
         stockReserved: Number(editor.stockReserved || 0),
         stockLowThreshold: Number(editor.stockLowThreshold || 0),
@@ -202,7 +202,7 @@ export default function AdminInventory() {
                   <td className="p-4 font-semibold line-clamp-1">{row.variant.product.title}</td>
                   <td className="p-4 font-mono text-xs">{row.variant.variantSku}</td>
                   <td className="p-4"><span className="badge-blue">{row.country.countryCode}</span></td>
-                  <td className="p-4 text-right font-mono">{formatCurrency(row.retailPrice, row.country.countryCode === 'DE' ? 'EUR' : row.country.countryCode === 'KE' ? 'KES' : 'AED')}</td>
+                  <td className="p-4 text-right font-mono">{formatCurrency(row.retailPrice == null ? null : Number(row.retailPrice), row.country.countryCode === 'DE' ? 'EUR' : row.country.countryCode === 'KE' ? 'KES' : 'AED')}</td>
                   <td className={`p-4 text-right font-mono font-bold ${available === 0 ? 'text-status-error' : low ? 'text-status-warning' : 'text-brand-dark'}`}>{available} / {row.stockOnHand}</td>
                   <td className="p-4"><span className={`badge ${!row.isAvailable || available === 0 ? 'badge-error' : low ? 'badge-warning' : 'badge-success'}`}>{!row.isAvailable ? 'Hidden' : available === 0 ? 'Out of stock' : low ? 'Low stock' : 'Available'}</span></td>
                   <td className="p-4 text-right"><button className="btn-outline btn-sm" onClick={() => void openEditor(row)}>Manage</button></td>

@@ -4,6 +4,7 @@ import { ProductCard } from '@/components/catalog/ProductCard';
 import { ProductCard as TProductCard } from '@/types';
 import { REGIONS } from '@/lib/utils';
 import { resolveCurrency } from '@/lib/country';
+import { loadSiteSettings, regionShowsPrice } from '@/lib/cms';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { CategoryTile } from '@/components/catalog/CategoryTile';
 
@@ -30,7 +31,11 @@ export default async function SearchPage({
   const q = (await searchParams).q ?? '';
   let products: TProductCard[] = [];
   let totalCount = 0;
-  const categories = await api.get<ApiCategory[]>('/catalog/categories', { country: region }).then((res) => res.data).catch(() => []);
+  const [categories, siteSettings] = await Promise.all([
+    api.get<ApiCategory[]>('/catalog/categories', { country: region }).then((res) => res.data).catch(() => []),
+    loadSiteSettings(),
+  ]);
+  const showPrice = regionShowsPrice(siteSettings, region);
   const res = q
     ? await api.get<TProductCard[]>(`/catalog/search?q=${encodeURIComponent(q)}&limit=24`, { country: region }).catch(() => null)
     : await api.get<TProductCard[]>('/catalog/products?limit=24', { country: region }).catch(() => null);
@@ -74,7 +79,7 @@ export default async function SearchPage({
       {/* Results grid */}
       {products.length > 0 ? (
         <section className="mt-8 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-          {products.map((p) => <ProductCard key={p.id} product={p} region={region} currency={currency} />)}
+          {products.map((p) => <ProductCard key={p.id} product={p} region={region} currency={currency} showPrice={showPrice} />)}
         </section>
       ) : q ? (
         <section className="mt-8 card p-12 text-center">

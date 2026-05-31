@@ -13,7 +13,7 @@ import { Rail } from '@/components/ui/Rail';
 import { FilterSidebar, FilterSpec } from '@/components/catalog/FilterSidebar';
 import { SortBar } from '@/components/catalog/SortBar';
 import { getCategoryMeta } from '@/lib/categoryMeta';
-import { loadBanners } from '@/lib/cms';
+import { loadBanners, loadSiteSettings, regionShowsPrice } from '@/lib/cms';
 import { BannerTile } from '@/components/ui/BannerTile';
 
 interface Category {
@@ -48,7 +48,8 @@ export default async function CategoryPage({
   const query = await searchParams;
   const currency = await resolveCurrency(region);
   const meta = getCategoryMeta(slug);
-  const categoryBanners = await loadBanners('category', region);
+  const [categoryBanners, siteSettings] = await Promise.all([loadBanners('category', region), loadSiteSettings()]);
+  const showPrice = regionShowsPrice(siteSettings, region);
   const categoryBanner = categoryBanners[0];
   const categoryImage = categoryBanner?.imageUrl ?? '/img/banners/cms/hazardous-lighting.jpg';
 
@@ -180,7 +181,7 @@ export default async function CategoryPage({
               </div>
             ) : (
               <div className="mt-5 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                {products.map((p) => <ProductCard key={p.id} product={p} region={region} currency={currency} />)}
+                {products.map((p) => <ProductCard key={p.id} product={p} region={region} currency={currency} showPrice={showPrice} />)}
               </div>
             )}
 
@@ -210,7 +211,7 @@ export default async function CategoryPage({
           />
           <Rail>
             {products.slice(0, 8).map((p) => (
-              <div key={`${sub.slug}-${p.id}`} className="w-[230px] md:w-[260px]"><ProductCard product={p} region={region} currency={currency} /></div>
+              <div key={`${sub.slug}-${p.id}`} className="w-[230px] md:w-[260px]"><ProductCard product={p} region={region} currency={currency} showPrice={showPrice} /></div>
             ))}
             {products.length === 0 && <div className="text-sm text-brand-gray italic py-4">Sample rail — populated when products exist.</div>}
           </Rail>

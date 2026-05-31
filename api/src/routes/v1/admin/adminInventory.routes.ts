@@ -59,7 +59,7 @@ adminInventoryRoutes.put(
     z.object({
       retailPrice: z.number().nonnegative().nullable().optional(),
       compareAtPrice: z.number().nonnegative().nullable().optional(),
-      costPrice: z.number().nonnegative().nullable().optional(),
+      costPrice: z.number().nonnegative().optional(),
       stockOnHand: z.number().int().nonnegative().optional(),
       stockReserved: z.number().int().nonnegative().optional(),
       stockLowThreshold: z.number().int().nonnegative().optional(),

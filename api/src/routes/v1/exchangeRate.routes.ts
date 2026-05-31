@@ -14,7 +14,7 @@ exchangeRateRoutes.get(
     const setting = await prisma.setting.findUnique({ where: { key: 'currencyDisplay' } });
     const cfg = (setting?.value ?? {}) as { enabled?: boolean; baseCurrency?: string; marginPct?: number };
     const marginPct = typeof cfg.marginPct === 'number' ? cfg.marginPct : 2.5;
-    const enabled = cfg.enabled !== false; // default on if setting exists
+    const enabled = cfg.enabled === true; // off by default until admin enables it
 
     const rates = await exchangeRateService.getRates(marginPct);
     return ok(res, {

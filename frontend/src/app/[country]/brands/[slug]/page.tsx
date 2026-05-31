@@ -5,6 +5,7 @@ import { ProductCard } from '@/components/catalog/ProductCard';
 import { PageHero } from '@/components/ui/PageHero';
 import { REGIONS } from '@/lib/utils';
 import { resolveCurrency } from '@/lib/country';
+import { loadSiteSettings, regionShowsPrice } from '@/lib/cms';
 
 interface BrandDetail {
   brand: { id: number; name: string; slug: string; originCountry?: string | null; description?: string | null };
@@ -13,7 +14,8 @@ interface BrandDetail {
 
 export default async function BrandPage({ params }: { params: Promise<{ country: string; slug: string }> }) {
   const { country: region, slug } = await params;
-  const currency = await resolveCurrency(region);
+  const [currency, siteSettings] = await Promise.all([resolveCurrency(region), loadSiteSettings()]);
+  const showPrice = regionShowsPrice(siteSettings, region);
   const res = await api.get<BrandDetail>(`/catalog/brands/${slug}`, { country: region }).catch(() => null);
 
   if (!res) {
@@ -42,7 +44,7 @@ export default async function BrandPage({ params }: { params: Promise<{ country:
           <>
             <p className="text-sm text-brand-gray mb-4">{products.length} product{products.length === 1 ? '' : 's'}</p>
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-              {products.map((p) => <ProductCard key={p.id} product={p} region={region} currency={currency} />)}
+              {products.map((p) => <ProductCard key={p.id} product={p} region={region} currency={currency} showPrice={showPrice} />)}
             </div>
           </>
         )}

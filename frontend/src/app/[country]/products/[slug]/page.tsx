@@ -189,7 +189,7 @@ export default async function ProductPage({ params }: { params: Promise<{ countr
         {cross.length > 0 ? (
           <Rail>
             {cross.map((p) => (
-              <div key={p.id} className="w-[230px] md:w-[260px]"><ProductCard product={p} region={region} currency={currency} /></div>
+              <div key={p.id} className="w-[230px] md:w-[260px]"><ProductCard product={p} region={region} currency={currency} showPrice={showPrice} /></div>
             ))}
           </Rail>
         ) : (

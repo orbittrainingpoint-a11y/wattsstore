@@ -39,16 +39,17 @@ export function ProductCard({
   const [msg, setMsg] = useState<string | null>(null);
   const { rates, convert } = useExchangeRates();
 
-  // When real-time currency display is enabled, convert the stored regional price
-  // to the active country's currency using live rates + admin margin.
+  // When real-time currency display is enabled, prices are treated as stored in
+  // baseCurrency (USD) and converted to the region's local currency for display.
   const regionCurrency = REGION_CURRENCY[region] ?? currency;
+  const baseCurrency = rates?.enabled ? (rates.baseCurrency ?? 'USD') : currency;
+  const displayCurrency = rates?.enabled ? regionCurrency : currency;
   const displayPrice = rates?.enabled && product.price != null
-    ? convert(product.price, currency, regionCurrency)
+    ? convert(product.price, baseCurrency, regionCurrency)
     : product.price;
   const displayCompare = rates?.enabled && product.compareAtPrice != null
-    ? convert(product.compareAtPrice, currency, regionCurrency)
+    ? convert(product.compareAtPrice, baseCurrency, regionCurrency)
     : product.compareAtPrice;
-  const displayCurrency = rates?.enabled ? regionCurrency : currency;
 
   const discountPct =
     product.price && product.compareAtPrice && product.compareAtPrice > product.price
@@ -167,8 +168,8 @@ export function ProductCard({
               {displayCompare && displayPrice && displayCompare > displayPrice && (
                 <span className="text-xs text-brand-gray line-through">{formatCurrency(displayCompare, displayCurrency)}</span>
               )}
-              {rates?.enabled && rates.showBothCurrencies && product.price != null && displayCurrency !== currency && (
-                <span className="text-[11px] text-brand-gray">({formatCurrency(product.price, currency)})</span>
+              {rates?.enabled && rates.showBothCurrencies && product.price != null && displayCurrency !== baseCurrency && (
+                <span className="text-[11px] text-brand-gray">({formatCurrency(product.price, baseCurrency)})</span>
               )}
             </>
           ) : (

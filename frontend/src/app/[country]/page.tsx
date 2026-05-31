@@ -3,7 +3,7 @@ import { api } from '@/lib/api';
 import { REGIONS } from '@/lib/utils';
 import { resolveCurrency } from '@/lib/country';
 import { HERO_IMAGES, TRUST_ICONS, BLOG_IMAGES } from '@/lib/images';
-import { loadBanners, loadSiteSettings, loadTestimonials, CmsBanner } from '@/lib/cms';
+import { loadBanners, loadSiteSettings, loadTestimonials, regionShowsPrice, CmsBanner } from '@/lib/cms';
 import { ProductCard as TProductCard } from '@/types';
 import type { CategoryTileData } from '@/components/catalog/CategoryTile';
 import type { BrandTileData } from '@/components/catalog/BrandTile';
@@ -119,6 +119,7 @@ export default async function HomePage({ params }: { params: Promise<{ country: 
     ...(home.products?.newArrivals ?? []),
     ...(home.products?.bestSellers ?? []),
   ];
+  const showPrice = regionShowsPrice(settings, region);
   const trustBadges = settings?.trustBadges ?? [
     { image: TRUST_ICONS.delivery, label: 'Regional Catalog' },
     { image: TRUST_ICONS.warranty, label: 'Product Documents' },
@@ -189,7 +190,7 @@ export default async function HomePage({ params }: { params: Promise<{ country: 
         </section>
       )}
 
-      <ProductSection title="Best Sellers" products={home.products?.bestSellers ?? allProducts} region={region} currency={currency} />
+      <ProductSection title="Best Sellers" products={home.products?.bestSellers ?? allProducts} region={region} currency={currency} showPrice={showPrice} />
 
       {strip.length > 0 && (
         <section className="container-ws pb-14 md:pb-20">
@@ -200,9 +201,9 @@ export default async function HomePage({ params }: { params: Promise<{ country: 
         </section>
       )}
 
-      <ProductSection title="New Arrivals" products={home.products?.newArrivals ?? allProducts} region={region} currency={currency} />
+      <ProductSection title="New Arrivals" products={home.products?.newArrivals ?? allProducts} region={region} currency={currency} showPrice={showPrice} />
 
-      <ProductSection title="Solar Project Picks" products={home.solarProducts.length ? home.solarProducts : allProducts.slice(0, 8)} region={region} currency={currency} />
+      <ProductSection title="Solar Project Picks" products={home.solarProducts.length ? home.solarProducts : allProducts.slice(0, 8)} region={region} currency={currency} showPrice={showPrice} />
 
       {promo.length > 0 && (
         <section className="container-ws pb-14 md:pb-20">
@@ -250,7 +251,7 @@ export default async function HomePage({ params }: { params: Promise<{ country: 
         </section>
       )}
 
-      <ProductSection title="Featured Products" products={home.products?.featured ?? allProducts} region={region} currency={currency} />
+      <ProductSection title="Featured Products" products={home.products?.featured ?? allProducts} region={region} currency={currency} showPrice={showPrice} />
 
       <section className="surface-soft border-y border-gray-200 py-14 md:py-20">
         <div className="container-ws">
@@ -280,7 +281,7 @@ export default async function HomePage({ params }: { params: Promise<{ country: 
   );
 }
 
-function ProductSection({ title, products, region, currency }: { title: string; products: TProductCard[]; region: string; currency: string }) {
+function ProductSection({ title, products, region, currency, showPrice }: { title: string; products: TProductCard[]; region: string; currency: string; showPrice?: boolean }) {
   if (!products.length) return null;
   return (
     <section className="container-ws py-12">
@@ -288,7 +289,7 @@ function ProductSection({ title, products, region, currency }: { title: string; 
       <Rail>
         {products.map((product) => (
           <div key={product.id} className="w-[230px] md:w-[260px]">
-            <ProductCard product={product} region={region} currency={currency} />
+            <ProductCard product={product} region={region} currency={currency} showPrice={showPrice} />
           </div>
         ))}
       </Rail>

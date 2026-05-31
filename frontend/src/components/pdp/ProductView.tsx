@@ -32,10 +32,11 @@ export function ProductView({ product, region, currency, showPrice = true }: { p
   const schema = product.variantSchema ?? [];
   const { rates, convert } = useExchangeRates();
   const regionCurrency = REGION_CURRENCY[region] ?? currency;
+  const baseCurrency = rates?.enabled ? (rates.baseCurrency ?? 'USD') : currency;
   const pdpCurrency = rates?.enabled ? regionCurrency : currency;
   function pdpPrice(amount: number | null | undefined) {
     if (amount == null) return null;
-    return rates?.enabled ? convert(amount, currency, regionCurrency) : amount;
+    return rates?.enabled ? convert(amount, baseCurrency, regionCurrency) : amount;
   }
   const attrValues = useMemo(() => {
     const map: Record<string, Set<string>> = {};
@@ -157,8 +158,8 @@ export function ProductView({ product, region, currency, showPrice = true }: { p
                 {selected?.compareAtPrice && selected.price && selected.compareAtPrice > selected.price && (
                   <span className="text-base text-brand-gray line-through">{formatCurrency(pdpPrice(selected.compareAtPrice), pdpCurrency)}</span>
                 )}
-                {rates?.enabled && rates.showBothCurrencies && selected?.price != null && pdpCurrency !== currency && (
-                  <span className="text-sm text-brand-gray">({formatCurrency(selected.price, currency)})</span>
+                {rates?.enabled && rates.showBothCurrencies && selected?.price != null && pdpCurrency !== baseCurrency && (
+                  <span className="text-sm text-brand-gray">({formatCurrency(selected.price, baseCurrency)})</span>
                 )}
                 {discountPct > 0 && <span className="badge-error font-bold">SAVE {discountPct}%</span>}
               </>

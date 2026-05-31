@@ -65,7 +65,18 @@ accountRoutes.get(
     return ok(res, items);
   }),
 );
-// Mark notification read (sentAt = now signals "seen")
+// Mark all in-app notifications as read — must be BEFORE /:id/read to avoid param conflict
+accountRoutes.put(
+  '/notifications/read-all',
+  asyncHandler(async (req, res) => {
+    const { count } = await prisma.notification.updateMany({
+      where: { userId: req.user!.id, channel: 'in_app', sentAt: null },
+      data: { sentAt: new Date() },
+    });
+    return ok(res, { cleared: count });
+  }),
+);
+// Mark single notification read (sentAt = now signals "seen")
 accountRoutes.put(
   '/notifications/:id/read',
   asyncHandler(async (req, res) => {
