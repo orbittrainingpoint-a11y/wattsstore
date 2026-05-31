@@ -84,14 +84,14 @@ export default function AdminInventory() {
     const adjustments = await api.get<Adjustment[]>(`/admin/inventory/${row.id}/adjustments`).then((r) => r.data).catch(() => []);
     setEditor({
       row,
-      retailPrice: String(row.retailPrice),
+      retailPrice: row.retailPrice == null ? '' : String(row.retailPrice),
       compareAtPrice: row.compareAtPrice == null ? '' : String(row.compareAtPrice),
       costPrice: row.costPrice == null ? '' : String(row.costPrice),
-      stockLowThreshold: String(row.stockLowThreshold),
-      stockOnHand: String(row.stockOnHand),
-      stockReserved: String(row.stockReserved),
-      baseShippingCost: String(row.baseShippingCost),
-      perKgAdder: String(row.perKgAdder),
+      stockLowThreshold: String(row.stockLowThreshold ?? 5),
+      stockOnHand: String(row.stockOnHand ?? 0),
+      stockReserved: String(row.stockReserved ?? 0),
+      baseShippingCost: String(row.baseShippingCost ?? 0),
+      perKgAdder: String(row.perKgAdder ?? 0),
       isAvailable: row.isAvailable,
       adjustmentType: 'received',
       quantityDelta: '',
@@ -103,20 +103,24 @@ export default function AdminInventory() {
   async function saveSettings() {
     if (!editor) return;
     setError(null);
-    await api.put(`/admin/inventory/${editor.row.id}`, {
-      retailPrice: Number(editor.retailPrice),
-      compareAtPrice: editor.compareAtPrice ? Number(editor.compareAtPrice) : null,
-      costPrice: editor.costPrice ? Number(editor.costPrice) : null,
-      stockOnHand: Number(editor.stockOnHand || 0),
-      stockReserved: Number(editor.stockReserved || 0),
-      stockLowThreshold: Number(editor.stockLowThreshold),
-      baseShippingCost: Number(editor.baseShippingCost),
-      perKgAdder: Number(editor.perKgAdder),
-      isAvailable: editor.isAvailable,
-    });
-    setMessage('Inventory settings saved.');
-    setEditor(null);
-    load();
+    try {
+      await api.put(`/admin/inventory/${editor.row.id}`, {
+        retailPrice: editor.retailPrice.trim() ? Number(editor.retailPrice) : null,
+        compareAtPrice: editor.compareAtPrice.trim() ? Number(editor.compareAtPrice) : null,
+        costPrice: editor.costPrice.trim() ? Number(editor.costPrice) : null,
+        stockOnHand: Number(editor.stockOnHand || 0),
+        stockReserved: Number(editor.stockReserved || 0),
+        stockLowThreshold: Number(editor.stockLowThreshold || 0),
+        baseShippingCost: Number(editor.baseShippingCost || 0),
+        perKgAdder: Number(editor.perKgAdder || 0),
+        isAvailable: editor.isAvailable,
+      });
+      setMessage('Inventory settings saved.');
+      setEditor(null);
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    }
   }
 
   async function adjustStock() {
@@ -155,6 +159,20 @@ export default function AdminInventory() {
             <option value="hidden">Hidden</option>
           </select>
           <button className="btn-outline" onClick={load}>Apply</button>
+          <button
+            className="btn-ghost"
+            title="Create missing pricing rows for variants that are missing them (safe to run anytime)"
+            onClick={async () => {
+              if (!confirm('Initialize missing inventory rows for all variants × active countries? This is safe to run repeatedly.')) return;
+              try {
+                const response = await api.post<{ created: number; variants: number; countries: number }>('/admin/inventory/backfill', {});
+                setMessage(`Backfill done — ${response.data.created} new row(s) created across ${response.data.variants} variant(s) and ${response.data.countries} country(ies).`);
+                load();
+              } catch (err) {
+                setError((err as Error).message);
+              }
+            }}
+          >Initialize missing rows</button>
         </div>
       </header>
 

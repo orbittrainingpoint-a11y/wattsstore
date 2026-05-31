@@ -57,7 +57,7 @@ adminInventoryRoutes.put(
   '/inventory/:id',
   validate(
     z.object({
-      retailPrice: z.number().nonnegative().optional(),
+      retailPrice: z.number().nonnegative().nullable().optional(),
       compareAtPrice: z.number().nonnegative().nullable().optional(),
       costPrice: z.number().nonnegative().nullable().optional(),
       stockOnHand: z.number().int().nonnegative().optional(),
@@ -71,6 +71,31 @@ adminInventoryRoutes.put(
   asyncHandler(async (req, res) =>
     ok(res, await prisma.regionalInventoryPricing.update({ where: { id: Number(req.params.id) }, data: req.body })),
   ),
+);
+
+// Backfill: create missing pricing rows for every active variant × active country.
+// Idempotent — uses skipDuplicates. Run this after upgrading from a build that didn't
+// auto-create pricing rows on variant creation.
+adminInventoryRoutes.post(
+  '/inventory/backfill',
+  asyncHandler(async (_req, res) => {
+    const [variants, countries] = await Promise.all([
+      prisma.productVariant.findMany({ select: { id: true } }),
+      prisma.country.findMany({ where: { isActive: true }, select: { id: true } }),
+    ]);
+    if (!variants.length || !countries.length) return ok(res, { created: 0, variants: variants.length, countries: countries.length });
+    const rows = variants.flatMap((variant) =>
+      countries.map((country) => ({
+        productVariantId: variant.id,
+        countryId: country.id,
+        costPrice: 0,
+        stockOnHand: 0,
+        isAvailable: true,
+      })),
+    );
+    const result = await prisma.regionalInventoryPricing.createMany({ data: rows, skipDuplicates: true });
+    return ok(res, { created: result.count, variants: variants.length, countries: countries.length });
+  }),
 );
 
 adminInventoryRoutes.get(

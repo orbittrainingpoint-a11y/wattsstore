@@ -7,6 +7,8 @@ import { geoContext } from './middlewares/geoContext.middleware';
 import { attachUser } from './middlewares/auth.middleware';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler.middleware';
 import { v1Router } from './routes/v1';
+import { env } from './config/env';
+import { UPLOADS_ROOT } from './config/localStorage';
 
 export function createApp(): Application {
   const app = express();
@@ -33,9 +35,14 @@ export function createApp(): Application {
     next();
   });
 
-  app.use(express.json({ limit: '10mb' }));
+  app.use(express.json({ limit: '15mb' }));
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
+
+  // Serve local uploads when STORAGE_DRIVER=local. Files written under UPLOADS_DIR.
+  if (env.STORAGE_DRIVER === 'local') {
+    app.use(env.UPLOADS_PUBLIC_PATH, express.static(UPLOADS_ROOT, { maxAge: '7d', fallthrough: false }));
+  }
 
   // 5. Request logging
   app.use(requestLogger);

@@ -3,6 +3,19 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const comma = result.indexOf(',');
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('Failed to read file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export interface MediaAsset {
   id: number;
   url: string;
@@ -49,20 +62,13 @@ export function ImagePicker({
     setBusy(true);
     setError(null);
     try {
-      const signed = await api.post<{ uploadUrl: string; storageKey: string; publicUrl: string }>('/admin/media/presign', {
+      const mimeType = file.type || 'application/octet-stream';
+      const dataBase64 = await fileToBase64(file);
+      const stored = await api.post<MediaAsset>('/admin/media/upload', {
         filename: file.name,
-        mimeType: file.type,
+        mimeType,
         folder,
-      });
-      const put = await fetch(signed.data.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
-      if (!put.ok) throw new Error('Upload failed before registration.');
-      const stored = await api.post<MediaAsset>('/admin/media', {
-        url: signed.data.publicUrl,
-        storageKey: signed.data.storageKey,
-        filename: file.name,
-        mimeType: file.type,
-        sizeBytes: file.size,
-        folder,
+        dataBase64,
       });
       setItems((current) => [stored.data, ...current]);
       onSelect(stored.data.url);

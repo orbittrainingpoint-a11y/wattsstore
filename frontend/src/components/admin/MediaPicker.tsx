@@ -4,6 +4,20 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { MediaAsset } from './ImagePicker';
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // strip the "data:<mime>;base64," prefix and return just the encoded payload
+      const comma = result.indexOf(',');
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('Failed to read file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function MediaPicker({
   value,
   onSelect,
@@ -40,20 +54,13 @@ export function MediaPicker({
     setError(null);
     try {
       const mimeType = file.type || 'application/octet-stream';
-      const signed = await api.post<{ uploadUrl: string; storageKey: string; publicUrl: string }>('/admin/media/presign', {
+      const dataBase64 = await fileToBase64(file);
+      // One-shot upload — works for both local disk and MinIO storage drivers.
+      const stored = await api.post<MediaAsset>('/admin/media/upload', {
         filename: file.name,
         mimeType,
         folder,
-      });
-      const put = await fetch(signed.data.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': mimeType } });
-      if (!put.ok) throw new Error('Upload failed before registration.');
-      const stored = await api.post<MediaAsset>('/admin/media', {
-        url: signed.data.publicUrl,
-        storageKey: signed.data.storageKey,
-        filename: file.name,
-        mimeType,
-        sizeBytes: file.size,
-        folder,
+        dataBase64,
       });
       setItems((current) => [stored.data, ...current]);
       onSelect(stored.data.url);

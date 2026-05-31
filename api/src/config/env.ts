@@ -31,6 +31,10 @@ const envSchema = z.object({
   COOKIE_DOMAIN: z.string().default('localhost'),
   BCRYPT_COST: z.coerce.number().min(10).max(15).default(12),
 
+  // Storage: 'local' writes uploads to disk (served via /uploads), 'minio' uses S3-compatible MinIO.
+  STORAGE_DRIVER: z.enum(['local', 'minio']).default('local'),
+  UPLOADS_DIR: z.string().default('./uploads'),
+  UPLOADS_PUBLIC_PATH: z.string().default('/uploads'),
   MINIO_ENDPOINT: z.string().default('localhost'),
   MINIO_PORT: z.coerce.number().default(9000),
   MINIO_USE_SSL: boolish('false'),

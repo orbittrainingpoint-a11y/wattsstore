@@ -156,10 +156,27 @@ adminContentRoutes.get(
     return res.json({ success: true, data: items, meta: { page, limit, totalCount, totalPages: Math.max(1, Math.ceil(totalCount / limit)) } });
   }),
 );
+const mimeEnum = z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'application/pdf', 'text/plain', 'application/octet-stream']);
+const folderEnum = z.enum(['banners', 'products', 'documents', 'blog', 'testimonials', 'legal', 'misc']);
+
 adminContentRoutes.post(
   '/media/presign',
-  validate(z.object({ filename: z.string().min(1).max(255), mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'application/pdf', 'text/plain', 'application/octet-stream']), folder: z.enum(['banners', 'products', 'documents', 'blog', 'testimonials', 'legal', 'misc']).optional() })),
+  validate(z.object({ filename: z.string().min(1).max(255), mimeType: mimeEnum, folder: folderEnum.optional() })),
   asyncHandler(async (req, res) => ok(res, await mediaService.presign(req.body))),
+);
+// One-shot upload — works with local disk OR MinIO. Client sends base64 file inside JSON.
+// Use this when MinIO isn't available (STORAGE_DRIVER=local) or when avoiding presign hops.
+adminContentRoutes.post(
+  '/media/upload',
+  validate(z.object({
+    filename: z.string().min(1).max(255),
+    mimeType: mimeEnum,
+    folder: folderEnum.optional(),
+    dataBase64: z.string().min(1),
+    altText: z.string().max(255).nullable().optional(),
+    tags: z.array(z.string()).optional(),
+  })),
+  asyncHandler(async (req, res) => created(res, await mediaService.uploadDirect(req.body, req.user!.id))),
 );
 adminContentRoutes.post(
   '/media',

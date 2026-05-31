@@ -232,6 +232,8 @@ export const adminCatalogService = {
     });
     // Auto-create a zero-stock pricing record for every active country so the new variant
     // appears in the inventory matrix immediately — admins can then edit price/stock there.
+    // isAvailable: true so it shows up as "Out of stock" until the admin enters real stock,
+    // which is more discoverable than a silently-hidden variant.
     const countries = await prisma.country.findMany({ where: { isActive: true }, select: { id: true } });
     if (countries.length) {
       await prisma.regionalInventoryPricing.createMany({
@@ -240,7 +242,7 @@ export const adminCatalogService = {
           countryId: country.id,
           costPrice: 0,
           stockOnHand: 0,
-          isAvailable: false,
+          isAvailable: true,
         })),
         skipDuplicates: true,
       });

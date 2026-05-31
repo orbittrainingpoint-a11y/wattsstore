@@ -4,6 +4,7 @@ import { env } from './config/env';
 import { logger } from './config/logger';
 import { connectDatabase, disconnectDatabase } from './config/database';
 import { ensureBucket } from './config/minio';
+import { ensureLocalUploadsDir, UPLOADS_ROOT } from './config/localStorage';
 
 // Keep the HTTP server alive if a background dependency (e.g. the job queue backend)
 // emits an unhandled rejection. Such errors are logged, not fatal to request serving.
@@ -15,7 +16,12 @@ process.on('unhandledRejection', (reason) => {
 
 async function bootstrap(): Promise<void> {
   await connectDatabase();
-  await ensureBucket().catch((e) => logger.warn('MinIO bucket init skipped', { error: e.message }));
+  if (env.STORAGE_DRIVER === 'local') {
+    await ensureLocalUploadsDir();
+    logger.info(`Local storage enabled — uploads written to ${UPLOADS_ROOT}`);
+  } else {
+    await ensureBucket().catch((e) => logger.warn('MinIO bucket init skipped', { error: e.message }));
+  }
 
   const app = createApp();
   const server = app.listen(env.PORT, () => {

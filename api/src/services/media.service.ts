@@ -1,5 +1,6 @@
 import { prisma } from '../config/database';
 import { BUCKET, buildObjectKey, deleteObject, presignedDownload, presignedUpload } from '../config/minio';
+import { buildLocalKey, deleteLocalFile, publicLocalUrl, writeLocalFile } from '../config/localStorage';
 import { env } from '../config/env';
 import { AppError } from '../utils/AppError';
 
@@ -36,6 +37,9 @@ function validateMime(mimeType: string) {
 }
 
 function publicMediaUrl(id: number, storageKey?: string | null, url?: string | null) {
+  // Local storage: files are served directly via Express static — return the stored URL.
+  if (env.STORAGE_DRIVER === 'local') return url ?? '';
+  // MinIO: route through the presigned-redirect endpoint so URLs stay short-lived.
   return storageKey ? `/api/v1/media/${id}/file` : (url ?? '');
 }
 
@@ -44,14 +48,73 @@ function presentMediaAsset<T extends { id: number; storageKey?: string | null; u
 }
 
 export const mediaService = {
+  /** Used by the presign-then-PUT-then-register flow. Local mode tells the client to use uploadDirect instead. */
   async presign(input: { filename: string; mimeType: string; folder?: string }) {
     const folder = input.folder ?? 'misc';
     validateFolder(folder);
     validateMime(input.mimeType);
+    if (env.STORAGE_DRIVER === 'local') {
+      // Tell the client to use the direct upload endpoint — no presign needed locally.
+      return { driver: 'local' as const, filename: input.filename };
+    }
     const storageKey = buildObjectKey(`media/${folder}`, input.mimeType);
     const uploadUrl = await presignedUpload(storageKey);
     const publicUrl = `${env.MINIO_PUBLIC_URL.replace(/\/$/, '')}/${BUCKET}/${storageKey}`;
-    return { uploadUrl, storageKey, publicUrl, filename: input.filename };
+    return { driver: 'minio' as const, uploadUrl, storageKey, publicUrl, filename: input.filename };
+  },
+
+  /**
+   * One-shot upload + register for local storage. File arrives as base64 inside JSON
+   * (10 MB body limit handles ~7.5 MB raw payloads). Writes to disk, then creates the
+   * MediaAsset row.
+   */
+  async uploadDirect(
+    input: { filename: string; mimeType: string; folder?: string; dataBase64: string; altText?: string | null; tags?: string[] },
+    uploadedBy: number,
+  ) {
+    const folder = input.folder ?? 'misc';
+    validateFolder(folder);
+    validateMime(input.mimeType);
+    const buffer = Buffer.from(input.dataBase64, 'base64');
+    if (!buffer.length) throw AppError.badRequest('EMPTY_FILE', 'Upload contained no data.');
+    if (env.STORAGE_DRIVER === 'local') {
+      const storageKey = buildLocalKey(`media/${folder}`, input.mimeType);
+      await writeLocalFile(storageKey, buffer);
+      const publicUrl = publicLocalUrl(storageKey);
+      const created = await (prisma as any).mediaAsset.create({
+        data: {
+          url: publicUrl,
+          storageKey,
+          filename: input.filename,
+          mimeType: input.mimeType,
+          sizeBytes: buffer.length,
+          altText: input.altText ?? null,
+          folder,
+          tags: input.tags ?? [],
+          uploadedBy,
+        },
+      });
+      return presentMediaAsset({ ...created, url: publicUrl, storageKey: null }); // storageKey: null so publicMediaUrl returns the static path
+    }
+    // MinIO direct upload path (server-side PUT, used when presign isn't desirable).
+    const { putObject } = await import('../config/minio');
+    const storageKey = buildObjectKey(`media/${folder}`, input.mimeType);
+    await putObject(storageKey, buffer, input.mimeType);
+    const publicUrl = `${env.MINIO_PUBLIC_URL.replace(/\/$/, '')}/${BUCKET}/${storageKey}`;
+    const created = await (prisma as any).mediaAsset.create({
+      data: {
+        url: publicUrl,
+        storageKey,
+        filename: input.filename,
+        mimeType: input.mimeType,
+        sizeBytes: buffer.length,
+        altText: input.altText ?? null,
+        folder,
+        tags: input.tags ?? [],
+        uploadedBy,
+      },
+    });
+    return presentMediaAsset(created);
   },
 
   async list(filter: { search?: string; folder?: string }, skip: number, take: number) {
@@ -100,7 +163,7 @@ export const mediaService = {
   async downloadUrl(id: number) {
     const item = await (prisma as any).mediaAsset.findUnique({ where: { id } });
     if (!item) throw AppError.notFound('MEDIA_NOT_FOUND', 'Media asset not found.');
-    if (!item.storageKey) return item.url;
+    if (env.STORAGE_DRIVER === 'local' || !item.storageKey) return item.url;
     return presignedDownload(item.storageKey, 10 * 60);
   },
 
@@ -108,7 +171,10 @@ export const mediaService = {
     const item = await (prisma as any).mediaAsset.findUnique({ where: { id } });
     if (!item) throw AppError.notFound('MEDIA_NOT_FOUND', 'Media asset not found.');
     await (prisma as any).mediaAsset.delete({ where: { id } });
-    if (item.storageKey) await deleteObject(item.storageKey).catch(() => undefined);
+    if (item.storageKey) {
+      if (env.STORAGE_DRIVER === 'local') await deleteLocalFile(item.storageKey);
+      else await deleteObject(item.storageKey).catch(() => undefined);
+    }
     return { deleted: true };
   },
 };
