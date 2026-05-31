@@ -79,7 +79,7 @@ export default async function ProductPage({ params }: { params: Promise<{ countr
     ['Category', product.category.name],
     ['Brand', product.brand?.name ?? 'Not specified'],
     ['Variants', `${product.variants.length} option${product.variants.length === 1 ? '' : 's'}`],
-    ['Documents', product.datasheetUrl || product.iesFileUrl || product.documents?.length ? 'Available' : 'Contact sales'],
+    ['Documents', product.documents?.length ? `${product.documents.length} file${product.documents.length === 1 ? '' : 's'}` : 'Contact sales'],
   ];
   const productFaq = (product.faqs ?? []).map((faq) => ({ q: faq.question, a: faq.answer }));
   const relatedSearches = [...new Set([product.category.name, product.brand?.name, ...variantSpecs.slice(0, 4).map(([, value]) => String(value))].filter((item): item is string => Boolean(item)))];
@@ -152,8 +152,6 @@ export default async function ProductPage({ params }: { params: Promise<{ countr
               </table>
             </div>
             <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-              {product.datasheetUrl && <a className="btn-outline btn-sm" href={product.datasheetUrl} target="_blank" rel="noreferrer">Datasheet</a>}
-              {product.iesFileUrl && <a className="btn-outline btn-sm" href={product.iesFileUrl} target="_blank" rel="noreferrer">IES File</a>}
               {(product.documents ?? []).map((doc) => (
                 <a key={doc.id} className="btn-outline btn-sm" href={doc.fileUrl} target="_blank" rel="noreferrer">{doc.title}</a>
               ))}

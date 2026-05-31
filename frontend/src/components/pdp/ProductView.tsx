@@ -117,8 +117,9 @@ export function ProductView({ product, region, currency }: { product: ProductDet
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2 text-xs">
-          {product.datasheetUrl && <a className="btn-outline btn-sm" href={product.datasheetUrl} target="_blank" rel="noreferrer">Download Datasheet (PDF)</a>}
-          {product.iesFileUrl && <a className="btn-outline btn-sm" href={product.iesFileUrl} target="_blank" rel="noreferrer">Download IES File</a>}
+          {(product.documents ?? []).map((doc) => (
+            <a key={doc.id} className="btn-outline btn-sm" href={doc.fileUrl} target="_blank" rel="noreferrer">⬇ {doc.title}</a>
+          ))}
           <button className="btn-outline btn-sm" onClick={() => { if (typeof navigator !== 'undefined') navigator.clipboard?.writeText(window.location.href).catch(() => {}); }}>🔗 Share Product</button>
         </div>
       </div>
@@ -210,7 +211,7 @@ export function ProductView({ product, region, currency }: { product: ProductDet
             <div className="text-center">
               <div className="text-base">📐</div>
               <div className="mt-1 font-semibold">Documents</div>
-              <div className="text-brand-gray">{product.datasheetUrl || product.iesFileUrl ? 'Downloads available' : 'Request details'}</div>
+              <div className="text-brand-gray">{(product.documents ?? []).length > 0 ? `${(product.documents ?? []).length} download${(product.documents ?? []).length === 1 ? '' : 's'}` : 'Request details'}</div>
             </div>
             <div className="text-center border-x border-gray-100">
               <div className="text-base">🛠️</div>

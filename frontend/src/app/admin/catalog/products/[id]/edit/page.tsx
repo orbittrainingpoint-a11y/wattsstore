@@ -166,8 +166,6 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
         brandOrigin: product.brandOrigin || undefined,
         isFeatured: product.isFeatured,
         isNewArrival: product.isNewArrival,
-        datasheetUrl: product.datasheetUrl || null,
-        iesFileUrl: product.iesFileUrl || null,
         isActive: product.isActive,
       });
       setMsg('Product details saved.');
@@ -429,10 +427,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
               ))}
               <button type="button" className="btn-outline btn-sm" onClick={() => setProduct({ ...product, keyFeatures: [...(product.keyFeatures ?? []), ''] })}>+ Add feature point</button>
             </div>
-            <Field label="Datasheet URL" value={product.datasheetUrl ?? ''} placeholder="/api/v1/media/123/file or https://..." onChange={(event) => setProduct({ ...product, datasheetUrl: event.target.value })} />
-            <MediaPicker value={product.datasheetUrl} onSelect={(url) => setProduct({ ...product, datasheetUrl: url })} folder="documents" label="Upload/select datasheet" />
-            <Field label="IES / photometric file URL" value={product.iesFileUrl ?? ''} placeholder="/api/v1/media/123/file or https://..." onChange={(event) => setProduct({ ...product, iesFileUrl: event.target.value })} />
-            <MediaPicker value={product.iesFileUrl} onSelect={(url) => setProduct({ ...product, iesFileUrl: url })} folder="documents" label="Upload/select IES file" />
+            <p className="text-xs text-brand-gray">Datasheets, IES files, manuals and certificates are managed in the <strong>Product documents</strong> section below — add as many files as needed and they will appear on the storefront product page.</p>
           </div>
 
           <div className="card space-y-4 p-6">
