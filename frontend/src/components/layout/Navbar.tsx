@@ -158,9 +158,8 @@ export function Navbar({ region }: { region: string }) {
           </div>
         </form>
 
-        <div className="flex items-center gap-1 md:gap-2 text-sm shrink-0">
-          <button onClick={() => setMobileOpen(true)} aria-label="Open menu" className="md:hidden h-9 w-9 rounded-lg hover:bg-brand-blue/5 flex items-center justify-center">☰</button>
-
+        {/* ml-auto keeps this group pinned to the right on both mobile and desktop */}
+        <div className="flex items-center gap-1 md:gap-2 text-sm shrink-0 ml-auto">
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
@@ -189,6 +188,9 @@ export function Navbar({ region }: { region: string }) {
             </span>
             <span className="text-sm font-medium">{user ? user.firstName : 'Sign in'}</span>
           </Link>
+
+          {/* Hamburger last so it sits at the far right, after cart */}
+          <button onClick={() => setMobileOpen(true)} aria-label="Open menu" className="md:hidden h-9 w-9 rounded-lg hover:bg-brand-blue/5 flex items-center justify-center">☰</button>
         </div>
       </div>
 

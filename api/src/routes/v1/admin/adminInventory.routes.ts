@@ -50,6 +50,31 @@ adminInventoryRoutes.get(
   }),
 );
 
+// Sync stock across ALL regional rows for a variant (global warehouse model).
+// Pricing (retailPrice, costPrice) stays per-region; only stock fields propagate.
+adminInventoryRoutes.put(
+  '/inventory/variants/:variantId/stock',
+  validate(
+    z.object({
+      stockOnHand: z.number().int().nonnegative(),
+      stockReserved: z.number().int().nonnegative(),
+      stockLowThreshold: z.number().int().nonnegative(),
+      isAvailable: z.boolean(),
+    }),
+  ),
+  asyncHandler(async (req, res) => {
+    const variantId = Number(req.params.variantId);
+    const { stockOnHand, stockReserved, stockLowThreshold, isAvailable } = req.body as {
+      stockOnHand: number; stockReserved: number; stockLowThreshold: number; isAvailable: boolean;
+    };
+    await prisma.regionalInventoryPricing.updateMany({
+      where: { productVariantId: variantId },
+      data: { stockOnHand, stockReserved, stockLowThreshold, isAvailable },
+    });
+    return ok(res, { synced: true, variantId });
+  }),
+);
+
 adminInventoryRoutes.put(
   '/inventory/:id',
   validate(
