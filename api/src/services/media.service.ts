@@ -81,7 +81,7 @@ export const mediaService = {
       const storageKey = buildLocalKey(`media/${folder}`, input.mimeType);
       await writeLocalFile(storageKey, buffer);
       const publicUrl = publicLocalUrl(storageKey);
-      const created = await (prisma as any).mediaAsset.create({
+      const created = await prisma.mediaAsset.create({
         data: {
           url: publicUrl,
           storageKey,
@@ -101,7 +101,7 @@ export const mediaService = {
     const storageKey = buildObjectKey(`media/${folder}`, input.mimeType);
     await putObject(storageKey, buffer, input.mimeType);
     const publicUrl = `${env.MINIO_PUBLIC_URL.replace(/\/$/, '')}/${BUCKET}/${storageKey}`;
-    const created = await (prisma as any).mediaAsset.create({
+    const created = await prisma.mediaAsset.create({
       data: {
         url: publicUrl,
         storageKey,
@@ -132,8 +132,8 @@ export const mediaService = {
         : {}),
     };
     const [items, totalCount] = await Promise.all([
-      (prisma as any).mediaAsset.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
-      (prisma as any).mediaAsset.count({ where }),
+      prisma.mediaAsset.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
+      prisma.mediaAsset.count({ where }),
     ]);
     return { items: items.map(presentMediaAsset), totalCount };
   },
@@ -142,7 +142,7 @@ export const mediaService = {
     const folder = input.folder ?? 'misc';
     validateFolder(folder);
     validateMime(input.mimeType);
-    const created = await (prisma as any).mediaAsset.create({
+    const created = await prisma.mediaAsset.create({
       data: {
         url: input.url,
         storageKey: input.storageKey ?? null,
@@ -161,16 +161,16 @@ export const mediaService = {
   },
 
   async downloadUrl(id: number) {
-    const item = await (prisma as any).mediaAsset.findUnique({ where: { id } });
+    const item = await prisma.mediaAsset.findUnique({ where: { id } });
     if (!item) throw AppError.notFound('MEDIA_NOT_FOUND', 'Media asset not found.');
     if (env.STORAGE_DRIVER === 'local' || !item.storageKey) return item.url;
     return presignedDownload(item.storageKey, 10 * 60);
   },
 
   async delete(id: number) {
-    const item = await (prisma as any).mediaAsset.findUnique({ where: { id } });
+    const item = await prisma.mediaAsset.findUnique({ where: { id } });
     if (!item) throw AppError.notFound('MEDIA_NOT_FOUND', 'Media asset not found.');
-    await (prisma as any).mediaAsset.delete({ where: { id } });
+    await prisma.mediaAsset.delete({ where: { id } });
     if (item.storageKey) {
       if (env.STORAGE_DRIVER === 'local') await deleteLocalFile(item.storageKey);
       else await deleteObject(item.storageKey).catch(() => undefined);

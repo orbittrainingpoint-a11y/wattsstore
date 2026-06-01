@@ -292,32 +292,32 @@ export const adminCatalogService = {
   },
 
   async addDocument(productId: number, data: { title: string; fileUrl: string; fileType: string; sortOrder?: number }) {
-    const created = await (prisma as any).productDocument.create({ data: { productId, ...data } });
+    const created = await prisma.productDocument.create({ data: { productId, ...data } });
     await invalidateCatalogCache();
     return created;
   },
   async updateDocument(id: number, data: { title?: string; fileUrl?: string; fileType?: string; sortOrder?: number }) {
-    const updated = await (prisma as any).productDocument.update({ where: { id }, data });
+    const updated = await prisma.productDocument.update({ where: { id }, data });
     await invalidateCatalogCache();
     return updated;
   },
   async deleteDocument(id: number) {
-    const deleted = await (prisma as any).productDocument.delete({ where: { id } });
+    const deleted = await prisma.productDocument.delete({ where: { id } });
     await invalidateCatalogCache();
     return deleted;
   },
   async addFaq(productId: number, data: { question: string; answer: string; sortOrder?: number; isActive?: boolean }) {
-    const created = await (prisma as any).productFaq.create({ data: { productId, ...data } });
+    const created = await prisma.productFaq.create({ data: { productId, ...data } });
     await invalidateCatalogCache();
     return created;
   },
   async updateFaq(id: number, data: { question?: string; answer?: string; sortOrder?: number; isActive?: boolean }) {
-    const updated = await (prisma as any).productFaq.update({ where: { id }, data });
+    const updated = await prisma.productFaq.update({ where: { id }, data });
     await invalidateCatalogCache();
     return updated;
   },
   async deleteFaq(id: number) {
-    const deleted = await (prisma as any).productFaq.delete({ where: { id } });
+    const deleted = await prisma.productFaq.delete({ where: { id } });
     await invalidateCatalogCache();
     return deleted;
   },

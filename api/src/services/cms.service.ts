@@ -65,7 +65,7 @@ export const cmsService = {
       throw AppError.badRequest('INVALID_PLACEMENT', `Unknown banner placement: ${placement}`);
     }
     const now = new Date();
-    const rows = await (prisma as any).banner.findMany({
+    const rows = await prisma.banner.findMany({
       where: {
         placement,
         isActive: true,
@@ -84,11 +84,11 @@ export const cmsService = {
     const where: Record<string, unknown> = {};
     if (filter.placement) where.placement = filter.placement;
     if (filter.isActive != null) where.isActive = filter.isActive;
-    return (prisma as any).banner.findMany({ where, orderBy: [{ placement: 'asc' }, { sortOrder: 'asc' }] });
+    return prisma.banner.findMany({ where, orderBy: [{ placement: 'asc' }, { sortOrder: 'asc' }] });
   },
 
   async getBanner(id: number) {
-    const row = await (prisma as any).banner.findUnique({ where: { id } });
+    const row = await prisma.banner.findUnique({ where: { id } });
     if (!row) throw AppError.notFound('BANNER_NOT_FOUND', 'Banner not found.');
     return row;
   },
@@ -97,7 +97,7 @@ export const cmsService = {
     if (!VALID_PLACEMENTS.has(input.placement)) {
       throw AppError.badRequest('INVALID_PLACEMENT', `Unknown banner placement: ${input.placement}`);
     }
-    return (prisma as any).banner.create({
+    return prisma.banner.create({
       data: {
         ...input,
         countryIds: input.countryIds ?? [],
@@ -113,17 +113,17 @@ export const cmsService = {
     }
     // Make sure the row exists; throws if not.
     await this.getBanner(id);
-    return (prisma as any).banner.update({ where: { id }, data: patch });
+    return prisma.banner.update({ where: { id }, data: patch });
   },
 
   async deleteBanner(id: number) {
     await this.getBanner(id);
-    await (prisma as any).banner.delete({ where: { id } });
+    await prisma.banner.delete({ where: { id } });
     return { deleted: true };
   },
 
   async reorderBanners(rows: { id: number; sortOrder: number }[]) {
-    await prisma.$transaction(rows.map((r) => (prisma as any).banner.update({ where: { id: r.id }, data: { sortOrder: r.sortOrder } })));
+    await prisma.$transaction(rows.map((r) => prisma.banner.update({ where: { id: r.id }, data: { sortOrder: r.sortOrder } })));
     return { reordered: rows.length };
   },
 
@@ -131,17 +131,17 @@ export const cmsService = {
 
   /** Public: read a published legal page by slug. */
   async publicLegalPage(slug: string) {
-    const row = await (prisma as any).legalPage.findFirst({ where: { slug, isPublished: true } });
+    const row = await prisma.legalPage.findFirst({ where: { slug, isPublished: true } });
     if (!row) throw AppError.notFound('LEGAL_NOT_FOUND', 'Page not found.');
     return row;
   },
 
   async listLegalPages() {
-    return (prisma as any).legalPage.findMany({ orderBy: { slug: 'asc' } });
+    return prisma.legalPage.findMany({ orderBy: { slug: 'asc' } });
   },
 
   async getLegalPage(id: number) {
-    const row = await (prisma as any).legalPage.findUnique({ where: { id } });
+    const row = await prisma.legalPage.findUnique({ where: { id } });
     if (!row) throw AppError.notFound('LEGAL_NOT_FOUND', 'Legal page not found.');
     return row;
   },
@@ -162,7 +162,7 @@ export const cmsService = {
       metaDescription: input.metaDescription ?? null,
       isPublished: input.isPublished ?? true,
     };
-    return (prisma as any).legalPage.upsert({
+    return prisma.legalPage.upsert({
       where: { slug },
       create: { slug, ...data },
       update: data,
@@ -171,7 +171,7 @@ export const cmsService = {
 
   async deleteLegalPage(id: number) {
     await this.getLegalPage(id);
-    await (prisma as any).legalPage.delete({ where: { id } });
+    await prisma.legalPage.delete({ where: { id } });
     return { deleted: true };
   },
 };

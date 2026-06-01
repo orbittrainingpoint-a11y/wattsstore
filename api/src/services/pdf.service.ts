@@ -1,13 +1,26 @@
-/** Puppeteer invoice PDF generation → upload to MinIO (PRD §7.4, §13.6). Invoked by pdf.worker. */
+/** Puppeteer invoice PDF generation → upload to MinIO or local disk (PRD §7.4, §13.6). Invoked by pdf.worker. */
 import puppeteer from 'puppeteer';
 import { prisma } from '../config/database';
 import { renderTemplate } from './template.service';
 import { putObject, presignedDownload } from '../config/minio';
+import { writeLocalFile, publicLocalUrl } from '../config/localStorage';
 import { notificationService } from './notification.service';
 import { env } from '../config/env';
 import { getOrderDocumentSettings } from './orderDocumentSettings.service';
 
 const COMPANY = { name: env.COMPANY_NAME, address: env.COMPANY_ADDRESS, trn: env.COMPANY_TRN };
+
+/** Store a PDF buffer and return { storedKey, publicUrl }. Works with local disk or MinIO. */
+async function storePdf(objectKey: string, buffer: Buffer): Promise<{ storedKey: string; publicUrl: string }> {
+  if (env.STORAGE_DRIVER === 'local') {
+    await writeLocalFile(objectKey, buffer);
+    const localPath = publicLocalUrl(objectKey);
+    return { storedKey: localPath, publicUrl: `${env.API_BASE_URL}${localPath}` };
+  }
+  await putObject(objectKey, buffer, 'application/pdf');
+  const publicUrl = await presignedDownload(objectKey);
+  return { storedKey: objectKey, publicUrl };
+}
 
 async function htmlToPdf(html: string): Promise<Buffer> {
   const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
@@ -47,11 +60,9 @@ export const pdfService = {
 
     try {
       const buffer = await htmlToPdf(html);
-      const objectKey = `invoices/${quote.quoteRefNumber}.pdf`;
-      await putObject(objectKey, buffer, 'application/pdf');
-      await prisma.bulkQuote.update({ where: { id: quoteId }, data: { invoiceUrl: objectKey } });
+      const { storedKey, publicUrl } = await storePdf(`invoices/${quote.quoteRefNumber}.pdf`, buffer);
+      await prisma.bulkQuote.update({ where: { id: quoteId }, data: { invoiceUrl: storedKey } });
 
-      const downloadUrl = await presignedDownload(objectKey);
       await notificationService.queueEmail({
         template: 'rfq-invoice-ready',
         recipient: quote.contactEmail,
@@ -65,10 +76,10 @@ export const pdfService = {
           refNumber: quote.quoteRefNumber,
           total: Number(quote.totalOfferedValue ?? 0),
           currency: quote.currencyCode,
-          invoiceUrl: downloadUrl,
+          invoiceUrl: publicUrl,
         },
       }, { throwOnQueueFailure: true });
-      return objectKey;
+      return storedKey;
     } catch (error) {
       await prisma.bulkQuote.update({ where: { id: quoteId }, data: { quoteStatus: 'delivery_failed' } }).catch(() => undefined);
       await prisma.bulkQuoteStatusHistory.create({
@@ -96,10 +107,9 @@ export const pdfService = {
     });
 
     const buffer = await htmlToPdf(html);
-    const objectKey = `invoices/${order.orderNumber}.pdf`;
-    await putObject(objectKey, buffer, 'application/pdf');
-    await prisma.order.update({ where: { id: orderId }, data: { invoiceUrl: objectKey } });
-    return objectKey;
+    const { storedKey } = await storePdf(`invoices/${order.orderNumber}.pdf`, buffer);
+    await prisma.order.update({ where: { id: orderId }, data: { invoiceUrl: storedKey } });
+    return storedKey;
   },
 
   /** Generate a courier handover receipt for a shipment, store + set label_url. */
@@ -142,9 +152,8 @@ export const pdfService = {
 
     const buffer = await htmlToPdf(html);
     const safeTracking = (shipment.trackingNumber ?? `shipment-${shipment.id}`).replace(/[^a-z0-9_-]/gi, '-');
-    const objectKey = `shipments/${order.orderNumber}-${safeTracking}.pdf`;
-    await putObject(objectKey, buffer, 'application/pdf');
-    await prisma.shipment.update({ where: { id: shipmentId }, data: { labelUrl: objectKey } });
-    return objectKey;
+    const { storedKey } = await storePdf(`shipments/${order.orderNumber}-${safeTracking}.pdf`, buffer);
+    await prisma.shipment.update({ where: { id: shipmentId }, data: { labelUrl: storedKey } });
+    return storedKey;
   },
 };
