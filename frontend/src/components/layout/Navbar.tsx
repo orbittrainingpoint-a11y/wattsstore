@@ -192,8 +192,8 @@ export function Navbar({ region }: { region: string }) {
         </div>
       </div>
 
-      {/* Category strip */}
-      <nav className="relative border-t border-gray-100" onMouseLeave={() => setOpenCategory(null)}>
+      {/* Category strip — desktop only; mobile uses the slide-in hamburger menu */}
+      <nav className="relative border-t border-gray-100 hidden md:block" onMouseLeave={() => setOpenCategory(null)}>
         <div className="container-ws flex gap-1 md:gap-2 overflow-x-auto no-scrollbar py-2 text-sm">
           {menuCategories.slice(0, 7).map((category) => {
             const active = pathname.includes(`/categories/${category.slug}`);
@@ -270,7 +270,13 @@ export function Navbar({ region }: { region: string }) {
                   {hasMenuChildren(category) && openCategory === category.slug && (
                     <div className="border-t border-gray-100 px-3 pb-3 pt-2">
                       {filterLinks(category, region).map((link) => (
-                        <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className="block py-1.5 text-sm text-brand-gray hover:text-brand-blue">
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          onClick={() => setMobileOpen(false)}
+                          className={`block py-1.5 hover:text-brand-blue ${link.indent === 0 ? 'text-sm font-semibold text-brand-dark' : 'text-sm text-brand-gray'}`}
+                          style={{ paddingLeft: `${link.indent * 12}px` }}
+                        >
                           {link.label}
                         </Link>
                       ))}
@@ -288,7 +294,8 @@ export function Navbar({ region }: { region: string }) {
 
 function filterLinks(category: MenuCategory, region: string) {
   return descendants(category).map(({ node, depth }) => ({
-    label: `${'- '.repeat(depth - 1)}${node.name}`,
+    label: node.name,
+    indent: depth - 1, // used for visual left-padding only
     href: `/${region}/categories/${node.slug}`,
   }));
 }
@@ -298,34 +305,48 @@ function hasMenuChildren(category: MenuCategory) {
 }
 
 function CategoryDropdown({ category, region, close }: { category: MenuCategory; region: string; close: () => void }) {
-  const children = descendants(category);
+  const directChildren = (category.children ?? []).filter((c) => c.showInMenu !== false);
   return (
-    <div className="container-ws grid grid-cols-[250px_1fr] gap-8 py-5">
+    <div className="container-ws grid grid-cols-[220px_1fr] gap-8 py-5">
+      {/* Left panel — overview */}
       <div>
         <div className="text-lg font-extrabold text-brand-dark">{category.name}</div>
         {category.description && <p className="mt-2 text-sm leading-relaxed text-brand-gray">{category.description}</p>}
-        <Link href={`/${region}/categories/${category.slug}`} onClick={close} className="btn-primary btn-sm mt-4 inline-flex">Browse all</Link>
+        <Link href={`/${region}/categories/${category.slug}`} onClick={close} className="btn-primary btn-sm mt-4 inline-flex">
+          Browse all
+        </Link>
       </div>
-      <div className="grid grid-cols-3 gap-6">
-        {children.length > 0 && (
-          <div className="col-span-3">
-            <div className="text-xs font-bold uppercase tracking-wider text-brand-gray">Subcategories</div>
-            <div className="mt-2 grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
-              {children.map(({ node, depth }) => (
+      {/* Right panel — subcategories grouped by parent; each depth-1 child is its own column */}
+      {directChildren.length > 0 && (
+        <div className="grid gap-x-6 gap-y-1" style={{ gridTemplateColumns: `repeat(${Math.min(directChildren.length, 4)}, minmax(0,1fr))` }}>
+          {directChildren.map((child) => {
+            const grandchildren = (child.children ?? []).filter((c) => c.showInMenu !== false);
+            return (
+              <div key={child.slug} className="flex flex-col gap-0.5">
+                {/* Depth-1: bold header link */}
                 <Link
-                  key={node.slug}
-                  href={`/${region}/categories/${node.slug}`}
+                  href={`/${region}/categories/${child.slug}`}
                   onClick={close}
-                  style={{ paddingLeft: `${8 + ((depth - 1) * 14)}px` }}
-                  className={`block rounded py-1.5 pr-2 transition hover:bg-brand-blue/5 hover:text-brand-blue ${depth === 1 ? 'text-sm font-semibold text-brand-dark' : 'text-xs text-brand-gray'}`}
+                  className="text-sm font-bold text-brand-dark hover:text-brand-blue transition py-1"
                 >
-                  {node.name}
+                  {child.name}
                 </Link>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+                {/* Depth-2: plain sub-links, same list, no extra indentation */}
+                {grandchildren.map((gc) => (
+                  <Link
+                    key={gc.slug}
+                    href={`/${region}/categories/${gc.slug}`}
+                    onClick={close}
+                    className="text-xs text-brand-gray hover:text-brand-blue transition py-0.5 pl-0"
+                  >
+                    {gc.name}
+                  </Link>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
