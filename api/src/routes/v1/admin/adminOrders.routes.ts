@@ -9,6 +9,7 @@ import { asyncHandler } from '../../../utils/asyncHandler';
 import { ok, paginated, parsePagination } from '../../../utils/response';
 import { AppError } from '../../../utils/AppError';
 import { presignedDownload } from '../../../config/minio';
+import { env } from '../../../config/env';
 
 export const adminOrdersRoutes = Router();
 const orderStatusSchema = z.enum(['pending_payment', 'paid', 'pending_verification', 'verified', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded']);
@@ -52,7 +53,8 @@ adminOrdersRoutes.get(
   asyncHandler(async (req, res) => {
     const order = await prisma.order.findUnique({ where: { id: Number(req.params.id) }, select: { invoiceUrl: true } });
     if (!order?.invoiceUrl) throw AppError.notFound('INVOICE_NOT_READY', 'Invoice is not ready yet.');
-    return res.redirect(await presignedDownload(order.invoiceUrl));
+    const invoiceHref = env.STORAGE_DRIVER === 'local' ? order.invoiceUrl : await presignedDownload(order.invoiceUrl);
+    return res.redirect(invoiceHref);
   }),
 );
 
@@ -64,7 +66,8 @@ adminOrdersRoutes.get(
       select: { labelUrl: true },
     });
     if (!shipment?.labelUrl) throw AppError.notFound('RECEIPT_NOT_READY', 'Courier receipt is not ready yet.');
-    return res.redirect(await presignedDownload(shipment.labelUrl));
+    const receiptHref = env.STORAGE_DRIVER === 'local' ? shipment.labelUrl : await presignedDownload(shipment.labelUrl);
+    return res.redirect(receiptHref);
   }),
 );
 

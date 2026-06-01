@@ -225,7 +225,8 @@ export const quoteService = {
     const quote = await prisma.bulkQuote.findFirst({ where: { quoteRefNumber: refNumber, userId } });
     if (!quote) throw AppError.notFound('QUOTE_NOT_FOUND', 'Quote not found.');
     if (!quote.invoiceUrl) throw AppError.notFound('QUOTE_PDF_NOT_FOUND', 'Quotation PDF has not been generated yet.');
-    return { url: await presignedDownload(quote.invoiceUrl, 10 * 60) };
+    const url = env.STORAGE_DRIVER === 'local' ? quote.invoiceUrl : await presignedDownload(quote.invoiceUrl, 10 * 60);
+    return { url };
   },
 
   async accept(refNumber: string, userId: number) {

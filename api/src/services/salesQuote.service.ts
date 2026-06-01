@@ -4,6 +4,7 @@ import { pdfQueue } from '../config/bullmq';
 import { AppError } from '../utils/AppError';
 import { round2 } from './pricing.service';
 import { presignedDownload } from '../config/minio';
+import { env } from '../config/env';
 
 const URGENCY_ORDER: Record<string, number> = {
   immediate: 0,
@@ -47,7 +48,8 @@ export const salesQuoteService = {
     const quote = await prisma.bulkQuote.findUnique({ where: { id } });
     if (!quote) throw AppError.notFound('QUOTE_NOT_FOUND', 'Quote not found.');
     if (!quote.invoiceUrl) throw AppError.notFound('QUOTE_PDF_NOT_FOUND', 'Quotation PDF has not been generated yet.');
-    return { url: await presignedDownload(quote.invoiceUrl, 10 * 60) };
+    const url = env.STORAGE_DRIVER === 'local' ? quote.invoiceUrl : await presignedDownload(quote.invoiceUrl, 10 * 60);
+    return { url };
   },
 
   async claim(id: number, agentId: number) {

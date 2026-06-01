@@ -1,7 +1,7 @@
 /** Admin dashboard KPIs + sales/inventory reports (PRD §14.1, §14.6). */
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/database';
-import { startOfDay, subDays } from 'date-fns';
+import { startOfDay, subDays, addDays } from 'date-fns';
 
 function pctDelta(curr: number, prev: number): number {
   if (prev === 0) return curr > 0 ? 100 : 0;
@@ -130,7 +130,7 @@ export const reportsService = {
       prisma.notification.count({ where: { status: 'pending' } }),
       prisma.notification.count({ where: { status: 'failed' } }),
       prisma.bulkQuote.count({
-        where: { quoteStatus: { in: ['offered', 'invoice_sent'] }, expiresAt: { lte: subDays(new Date(), -7) } },
+        where: { quoteStatus: { in: ['offered', 'invoice_sent'] }, expiresAt: { gte: new Date(), lte: addDays(new Date(), 7) } },
       }),
       prisma.shipment.count({ where: { status: { in: ['in_transit', 'out_for_delivery'] } } }),
     ]);
