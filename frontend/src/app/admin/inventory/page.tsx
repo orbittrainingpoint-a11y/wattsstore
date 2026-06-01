@@ -51,23 +51,36 @@ export default function AdminInventory() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const PRIMARY_REGIONS = ['AE', 'KE', 'DE'];
+
   const [query, setQuery] = useState('');
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'out'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'hidden'>('all');
+  const [regionFilter, setRegionFilter] = useState<string>('primary');
   const [editor, setEditor] = useState<Editor | null>(null);
 
-  function load(overrides?: { q?: string; stock?: string; status?: string }) {
+  function load(overrides?: { q?: string; stock?: string; status?: string; region?: string }) {
     setLoading(true);
     setError(null);
     const q = overrides?.q ?? query;
     const stock = overrides?.stock ?? stockFilter;
     const status = overrides?.status ?? statusFilter;
+    const region = overrides?.region ?? regionFilter;
     const params = new URLSearchParams({ limit: '500' });
     if (q.trim()) params.set('search', q.trim());
     if (stock !== 'all') params.set('stock', stock);
     if (status !== 'all') params.set('status', status);
     api.get<InventoryRow[]>(`/admin/inventory?${params.toString()}`)
-      .then((response) => setRows(response.data))
+      .then((response) => {
+        const all: InventoryRow[] = response.data;
+        if (region === 'primary') {
+          setRows(all.filter((r) => PRIMARY_REGIONS.includes(r.country.countryCode)));
+        } else if (region !== 'all') {
+          setRows(all.filter((r) => r.country.countryCode === region));
+        } else {
+          setRows(all);
+        }
+      })
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false));
   }
@@ -145,6 +158,13 @@ export default function AdminInventory() {
             value={query}
             onChange={(event) => { setQuery(event.target.value); load({ q: event.target.value }); }}
           />
+          <select className="input w-44" value={regionFilter} onChange={(event) => { setRegionFilter(event.target.value); load({ region: event.target.value }); }}>
+            <option value="primary">Primary (AE / KE / DE)</option>
+            <option value="AE">UAE only</option>
+            <option value="KE">Kenya only</option>
+            <option value="DE">Germany only</option>
+            <option value="all">All regions</option>
+          </select>
           <select className="input w-36" value={stockFilter} onChange={(event) => { setStockFilter(event.target.value as typeof stockFilter); load({ stock: event.target.value }); }}>
             <option value="all">All stock</option>
             <option value="low">Low stock</option>
