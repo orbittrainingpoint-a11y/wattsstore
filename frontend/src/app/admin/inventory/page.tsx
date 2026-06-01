@@ -62,7 +62,7 @@ export default function AdminInventory() {
     const q = overrides?.q ?? query;
     const stock = overrides?.stock ?? stockFilter;
     const status = overrides?.status ?? statusFilter;
-    const params = new URLSearchParams({ limit: '200' });
+    const params = new URLSearchParams({ limit: '500' });
     if (q.trim()) params.set('search', q.trim());
     if (stock !== 'all') params.set('stock', stock);
     if (status !== 'all') params.set('status', status);

@@ -12,25 +12,22 @@ export const adminInventoryRoutes = Router();
 adminInventoryRoutes.get(
   '/inventory',
   asyncHandler(async (req, res) => {
-    const { page, limit, skip } = parsePagination(req.query as Record<string, unknown>);
+    const { page, limit, skip } = parsePagination(req.query as Record<string, unknown>, 50, 500);
     const where: Record<string, unknown> = {};
     if (req.query.country) where.countryId = Number(req.query.country);
     if (req.query.status === 'available') where.isAvailable = true;
     if (req.query.status === 'hidden') where.isAvailable = false;
+    const variantFilter: Record<string, unknown> = {};
     if (req.query.search) {
-      where.variant = {
-        OR: [
-          { variantSku: { contains: String(req.query.search), mode: 'insensitive' } },
-          { product: { title: { contains: String(req.query.search), mode: 'insensitive' } } },
-        ],
-      };
+      variantFilter.OR = [
+        { variantSku: { contains: String(req.query.search), mode: 'insensitive' } },
+        { product: { title: { contains: String(req.query.search), mode: 'insensitive' } } },
+      ];
     }
     if (req.query.categoryId) {
-      where.variant = {
-        ...(where.variant as Record<string, unknown> | undefined),
-        product: { categoryId: Number(req.query.categoryId) },
-      };
+      variantFilter.product = { categoryId: Number(req.query.categoryId) };
     }
+    if (Object.keys(variantFilter).length) where.variant = variantFilter;
     if (req.query.stock === 'out') {
       where.stockOnHand = { lte: 0 };
     }
