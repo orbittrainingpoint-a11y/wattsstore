@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
@@ -37,8 +37,6 @@ interface Editor {
   compareAtPrice: string;
   costPrice: string;
   stockLowThreshold: string;
-  stockOnHand: string;
-  stockReserved: string;
   baseShippingCost: string;
   perKgAdder: string;
   isAvailable: boolean;
@@ -58,27 +56,25 @@ export default function AdminInventory() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'hidden'>('all');
   const [editor, setEditor] = useState<Editor | null>(null);
 
-  function load() {
+  function load(overrides?: { q?: string; stock?: string; status?: string }) {
     setLoading(true);
-    const params = new URLSearchParams({ limit: '100' });
-    if (query.trim()) params.set('search', query.trim());
-    if (stockFilter !== 'all') params.set('stock', stockFilter);
-    if (statusFilter !== 'all') params.set('status', statusFilter);
+    setError(null);
+    const q = overrides?.q ?? query;
+    const stock = overrides?.stock ?? stockFilter;
+    const status = overrides?.status ?? statusFilter;
+    const params = new URLSearchParams({ limit: '200' });
+    if (q.trim()) params.set('search', q.trim());
+    if (stock !== 'all') params.set('stock', stock);
+    if (status !== 'all') params.set('status', status);
     api.get<InventoryRow[]>(`/admin/inventory?${params.toString()}`)
       .then((response) => setRows(response.data))
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false));
   }
 
-  useEffect(load, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((row) =>
-      [row.variant.product.title, row.variant.variantSku, row.country.countryCode].some((value) => value.toLowerCase().includes(q)),
-    );
-  }, [query, rows]);
+  const visible = rows;
 
   async function openEditor(row: InventoryRow) {
     const adjustments = await api.get<Adjustment[]>(`/admin/inventory/${row.id}/adjustments`).then((r) => r.data).catch(() => []);
@@ -88,8 +84,6 @@ export default function AdminInventory() {
       compareAtPrice: row.compareAtPrice == null ? '' : String(Number(row.compareAtPrice)),
       costPrice: row.costPrice == null ? '' : String(Number(row.costPrice)),
       stockLowThreshold: String(row.stockLowThreshold ?? 5),
-      stockOnHand: String(row.stockOnHand ?? 0),
-      stockReserved: String(row.stockReserved ?? 0),
       baseShippingCost: String(Number(row.baseShippingCost ?? 0)),
       perKgAdder: String(Number(row.perKgAdder ?? 0)),
       isAvailable: row.isAvailable,
@@ -107,9 +101,7 @@ export default function AdminInventory() {
       await api.put(`/admin/inventory/${editor.row.id}`, {
         retailPrice: editor.retailPrice.trim() ? Number(editor.retailPrice) : null,
         compareAtPrice: editor.compareAtPrice.trim() ? Number(editor.compareAtPrice) : null,
-        costPrice: Number(editor.costPrice || 0),        // NOT NULL in DB — default 0
-        stockOnHand: Number(editor.stockOnHand || 0),
-        stockReserved: Number(editor.stockReserved || 0),
+        costPrice: Number(editor.costPrice || 0),
         stockLowThreshold: Number(editor.stockLowThreshold || 0),
         baseShippingCost: Number(editor.baseShippingCost || 0),
         perKgAdder: Number(editor.perKgAdder || 0),
@@ -147,18 +139,23 @@ export default function AdminInventory() {
           <p className="text-sm text-brand-gray">Edit regional pricing, stock visibility, low-stock thresholds and manual adjustments.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <input className="input max-w-xs" placeholder="Search SKU, product, region..." value={query} onChange={(event) => setQuery(event.target.value)} />
-          <select className="input w-36" value={stockFilter} onChange={(event) => setStockFilter(event.target.value as typeof stockFilter)}>
+          <input
+            className="input max-w-xs"
+            placeholder="Search SKU, product, region..."
+            value={query}
+            onChange={(event) => { setQuery(event.target.value); load({ q: event.target.value }); }}
+          />
+          <select className="input w-36" value={stockFilter} onChange={(event) => { setStockFilter(event.target.value as typeof stockFilter); load({ stock: event.target.value }); }}>
             <option value="all">All stock</option>
             <option value="low">Low stock</option>
             <option value="out">Out of stock</option>
           </select>
-          <select className="input w-36" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}>
+          <select className="input w-36" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value as typeof statusFilter); load({ status: event.target.value }); }}>
             <option value="all">All status</option>
             <option value="available">Available</option>
             <option value="hidden">Hidden</option>
           </select>
-          <button className="btn-outline" onClick={load}>Apply</button>
+          <button className="btn-outline" onClick={() => load()}>Refresh</button>
           <button
             className="btn-ghost"
             title="Create missing pricing rows for variants that are missing them (safe to run anytime)"
@@ -232,8 +229,14 @@ export default function AdminInventory() {
                 <Field label="Retail price" value={editor.retailPrice} onChange={(value) => setEditor({ ...editor, retailPrice: value })} />
                 <Field label="Compare-at price" value={editor.compareAtPrice} onChange={(value) => setEditor({ ...editor, compareAtPrice: value })} />
                 <Field label="Cost price" value={editor.costPrice} onChange={(value) => setEditor({ ...editor, costPrice: value })} />
-                <Field label="Stock on hand" value={editor.stockOnHand} onChange={(value) => setEditor({ ...editor, stockOnHand: value })} />
-                <Field label="Reserved stock" value={editor.stockReserved} onChange={(value) => setEditor({ ...editor, stockReserved: value })} />
+                <div className="rounded-lg border border-gray-100 p-3 text-sm">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-gray">Stock on hand</span>
+                  <p className="mt-1 font-mono font-bold">{editor.row.stockOnHand} (use adjustment panel to change)</p>
+                </div>
+                <div className="rounded-lg border border-gray-100 p-3 text-sm">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-gray">Reserved stock</span>
+                  <p className="mt-1 font-mono">{editor.row.stockReserved} (auto-managed by orders)</p>
+                </div>
                 <Field label="Low stock threshold" value={editor.stockLowThreshold} onChange={(value) => setEditor({ ...editor, stockLowThreshold: value })} />
                 <Field label="Base shipping cost" value={editor.baseShippingCost} onChange={(value) => setEditor({ ...editor, baseShippingCost: value })} />
                 <Field label="Per-kg adder" value={editor.perKgAdder} onChange={(value) => setEditor({ ...editor, perKgAdder: value })} />
