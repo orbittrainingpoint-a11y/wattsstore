@@ -525,7 +525,7 @@ async function main() {
   ];
   for (const [i, b] of banners.entries()) {
     // Upsert by deterministic id so re-runs are idempotent.
-    await (prisma as any).banner.upsert({
+    await prisma.banner.upsert({
       where: { id: i + 1 },
       update: b,
       create: { ...b, countryIds: [] },
@@ -636,7 +636,7 @@ async function main() {
   });
 
   for (const p of legalPages) {
-    await (prisma as any).legalPage.upsert({
+    await prisma.legalPage.upsert({
       where: { slug: p.slug },
       update: { title: p.title, intro: p.intro, sections: p.sections, updatedLabel: p.updatedLabel, isPublished: true },
       create: { slug: p.slug, title: p.title, intro: p.intro, sections: p.sections, updatedLabel: p.updatedLabel, isPublished: true },
@@ -650,7 +650,7 @@ async function main() {
     { name: 'James Otieno', role: 'Site Manager', company: 'Konza Technopolis', quote: 'Quality matches the datasheet every time, across lighting and switchgear orders.', rating: 4.8, sortOrder: 2 },
   ];
   for (const [i, testimonial] of testimonials.entries()) {
-    await (prisma as any).testimonial.upsert({
+    await prisma.testimonial.upsert({
       where: { id: i + 1 },
       update: { ...testimonial, isActive: true, isFeatured: true },
       create: { ...testimonial, countryIds: [], isActive: true, isFeatured: true },
@@ -668,7 +668,7 @@ async function main() {
     { url: '/img/blog/lighting.svg', filename: 'lighting.svg', mimeType: 'image/svg+xml', folder: 'blog', altText: 'Lighting editorial cover' },
   ];
   for (const [i, asset] of media.entries()) {
-    await (prisma as any).mediaAsset.upsert({
+    await prisma.mediaAsset.upsert({
       where: { id: i + 1 },
       update: asset,
       create: { ...asset, tags: ['seed'] },
@@ -738,9 +738,9 @@ async function main() {
   // Keep CMS demo data clean for handoff: admins can add real content later.
   await prisma.faqEntry.deleteMany();
   await prisma.blogPost.deleteMany();
-  await (prisma as any).legalPage.deleteMany();
-  await (prisma as any).testimonial.deleteMany();
-  await (prisma as any).mediaAsset.deleteMany();
+  await prisma.legalPage.deleteMany();
+  await prisma.testimonial.deleteMany();
+  await prisma.mediaAsset.deleteMany();
   await prisma.forumReply.deleteMany();
   await prisma.forumThread.deleteMany();
 

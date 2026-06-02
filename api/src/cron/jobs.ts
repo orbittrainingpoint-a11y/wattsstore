@@ -40,11 +40,11 @@ export const cronJobs = {
       ORDER BY rip.stock_on_hand ASC LIMIT 200;`;
     if (rows.length) {
       await notificationService.queueEmail({
-        template: 'order-confirmation', // reuse simple layout; dedicated low-stock template can be added
+        template: 'low-stock-report',
         recipient: env.ADMIN_ALERT_EMAIL,
-        subject: `Low stock alert — ${rows.length} variants`,
+        subject: `Low stock alert — ${rows.length} variant(s) below threshold`,
         notificationType: 'low_stock_report',
-        data: { orderNumber: `${rows.length} items below threshold`, total: 0, currency: '' },
+        data: { itemCount: rows.length, rows },
       });
     }
     logger.info('cron:low-stock-report', { lowStockCount: rows.length });

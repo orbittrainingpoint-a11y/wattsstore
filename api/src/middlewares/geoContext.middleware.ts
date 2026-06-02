@@ -31,11 +31,21 @@ async function resolveCountry(code: string): Promise<GeoContext | null> {
   return ctx;
 }
 
+// Map storefront region slugs → DB country codes.
+// The frontend sends ?country=ae|ke|de|global (the URL slug), not the ISO code.
+const REGION_TO_CODE: Record<string, string> = {
+  ae: 'AE',
+  ke: 'KE',
+  de: 'DE',
+  global: 'US', // targetCountries has ['US', 'Global', ...]
+};
+
 export async function geoContext(req: Request, _res: Response, next: NextFunction): Promise<void> {
   try {
     // Priority: explicit ?country= slug from frontend region routing, else NGINX header, else default.
     const headerCode = (req.header('X-Geo-Country-Code') || '').toUpperCase();
-    const queryCode = (req.query.country as string | undefined)?.toUpperCase();
+    const queryRaw = (req.query.country as string | undefined)?.toLowerCase();
+    const queryCode = queryRaw ? (REGION_TO_CODE[queryRaw] ?? queryRaw.toUpperCase()) : undefined;
     const candidate = queryCode || headerCode || DEFAULT_COUNTRY_CODE;
 
     const ctx =
