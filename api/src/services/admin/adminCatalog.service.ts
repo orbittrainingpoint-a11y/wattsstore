@@ -322,10 +322,15 @@ export const adminCatalogService = {
     return deleted;
   },
 
-  // ── Images (presigned MinIO direct upload) ──
+  // ── Images (presigned MinIO upload — local-storage clients use /admin/media/upload instead) ──
   async presignImage(productId: number, mime: string) {
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(mime)) {
       throw AppError.badRequest('INVALID_MIME', 'Only JPEG, PNG and WebP images are allowed.');
+    }
+    const { env } = await import('../../config/env');
+    if (env.STORAGE_DRIVER === 'local') {
+      // Signal the client to use the direct base64 upload endpoint instead
+      return { driver: 'local' as const };
     }
     const imagePath = buildObjectKey(`products/${productId}`, mime);
     const uploadUrl = await presignedUpload(imagePath);
@@ -344,7 +349,15 @@ export const adminCatalogService = {
     const img = await prisma.productImage.findUnique({ where: { id: imageId } });
     if (!img || img.productId !== productId) throw AppError.notFound('IMAGE_NOT_FOUND', 'Image not found.');
     await prisma.productImage.delete({ where: { id: imageId } });
-    await deleteObject(img.imageUrl).catch(() => undefined);
+    const { env } = await import('../../config/env');
+    if (env.STORAGE_DRIVER === 'local') {
+      const { deleteLocalFile } = await import('../../config/localStorage');
+      // Strip the public path prefix to get the storage key
+      const key = img.imageUrl.replace(/^\/uploads\//, '');
+      await deleteLocalFile(key).catch(() => undefined);
+    } else {
+      await deleteObject(img.imageUrl).catch(() => undefined);
+    }
     await invalidateCatalogCache();
   },
 };

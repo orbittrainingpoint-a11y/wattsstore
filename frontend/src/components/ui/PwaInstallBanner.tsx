@@ -33,6 +33,11 @@ export function PwaInstallBanner() {
   const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
+    // Register service worker — required for beforeinstallprompt to fire
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+    }
+
     // Already installed as PWA — don't show
     if (window.matchMedia('(display-mode: standalone)').matches) return;
     if ((navigator as Navigator & { standalone?: boolean }).standalone) return;
@@ -87,7 +92,7 @@ export function PwaInstallBanner() {
   return (
     <div className="fixed bottom-20 left-4 right-4 md:left-auto md:right-6 md:max-w-sm z-[100] card shadow-2xl border border-brand-blue/20 p-4 animate-fade-in">
       <div className="flex items-start gap-3">
-        <img src="/img/icon-192.png" alt="WattsStore" className="h-12 w-12 rounded-xl shrink-0 shadow-sm" onError={(e) => { (e.target as HTMLImageElement).src = '/img/logo.svg'; }} />
+        <img src="/img/logo.svg" alt="WattsStore" className="h-12 w-12 rounded-xl shrink-0 shadow-sm p-1 bg-brand-blue" />
         <div className="flex-1 min-w-0">
           <div className="font-extrabold text-sm text-brand-dark">Install WattsStore App</div>
           <div className="text-xs text-brand-gray mt-0.5">
