@@ -8,6 +8,7 @@ import { orderService } from '../../services/order.service';
 import { AppError } from '../../utils/AppError';
 import { prisma } from '../../config/database';
 import { presignedDownload } from '../../config/minio';
+import { env } from '../../config/env';
 
 export const orderRoutes = Router();
 
@@ -32,7 +33,8 @@ orderRoutes.get(
     const order = await prisma.order.findUnique({ where: { orderNumber: req.params.orderNumber }, select: { userId: true, invoiceUrl: true } });
     if (!order || order.userId !== req.user!.id) throw AppError.notFound('ORDER_NOT_FOUND', 'Order not found.');
     if (!order.invoiceUrl) throw AppError.notFound('INVOICE_NOT_READY', 'Invoice is not ready yet.');
-    return res.redirect(await presignedDownload(order.invoiceUrl));
+    const invoiceHref = env.STORAGE_DRIVER === 'local' ? order.invoiceUrl : await presignedDownload(order.invoiceUrl);
+    return res.redirect(invoiceHref);
   }),
 );
 orderRoutes.post('/:orderNumber/cancel', asyncHandler(orderController.cancel));
