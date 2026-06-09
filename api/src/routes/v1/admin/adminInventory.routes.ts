@@ -37,7 +37,7 @@ adminInventoryRoutes.get(
         orderBy: { stockOnHand: 'asc' },
         skip,
         take: limit,
-        include: { variant: { include: { product: { select: { title: true, categoryId: true, category: { select: { name: true } } } } } }, country: { select: { countryCode: true, currencyCode: true } } },
+        include: { variant: { select: { variantSku: true, attributes: true, product: { select: { title: true, categoryId: true, category: { select: { name: true } } } } } }, country: { select: { countryCode: true, currencyCode: true } } },
       }),
       prisma.regionalInventoryPricing.count({ where }),
     ]);

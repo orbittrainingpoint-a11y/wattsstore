@@ -64,18 +64,27 @@ export const adminCatalogService = {
   async listCategories() {
     const rows = await prisma.category.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
     const byId = new Map(rows.map((row) => [row.id, row]));
-    const getDepth = (row: typeof rows[number]) => {
-      let depth = 1;
-      let parentId = row.parentId;
-      const visited = new Set<number>([row.id]);
-      while (parentId && byId.has(parentId) && !visited.has(parentId)) {
-        visited.add(parentId);
-        depth += 1;
-        parentId = byId.get(parentId)!.parentId;
+    // Build tree-ordered flat list: each parent is immediately followed by its children.
+    const childrenOf = new Map<number | null, typeof rows>();
+    for (const row of rows) {
+      const key = row.parentId ?? null;
+      if (!childrenOf.has(key)) childrenOf.set(key, []);
+      childrenOf.get(key)!.push(row);
+    }
+    const result: (typeof rows[number] & { depth: number })[] = [];
+    function walk(parentId: number | null, depth: number) {
+      for (const row of childrenOf.get(parentId) ?? []) {
+        result.push({ ...row, depth });
+        walk(row.id, depth + 1);
       }
-      return depth;
-    };
-    return rows.map((row) => ({ ...row, depth: getDepth(row) }));
+    }
+    walk(null, 1);
+    // Include orphan rows (broken parent refs) at depth 1 at end.
+    const seen = new Set(result.map((r) => r.id));
+    for (const row of rows) {
+      if (!seen.has(row.id)) result.push({ ...row, depth: 1 });
+    }
+    return result;
   },
   async createCategory(data: CategoryInput) {
     await validateCategoryParent(null, data.parentId);

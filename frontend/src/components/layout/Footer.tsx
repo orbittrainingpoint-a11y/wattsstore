@@ -66,7 +66,7 @@ export async function Footer({ region }: { region: string }) {
           ['B2B Quotes', `/${region}/quote-basket`],
           ['Bulk Pricing', `/${region}/contact`],
           ['Solar Planner', `/${region}/solar-planner`],
-          ['Become a Partner', `/${region}/contact`],
+          ['Blog', `/${region}/blog`],
           ['About Us', `/${region}/about`],
         ]} />
 

@@ -140,7 +140,7 @@ const mediaRegisterSchema = z.object({
   width: z.number().int().positive().optional().nullable(),
   height: z.number().int().positive().optional().nullable(),
   altText: z.string().max(255).optional().nullable(),
-  folder: z.enum(['banners', 'products', 'documents', 'blog', 'testimonials', 'legal', 'misc']).optional(),
+  folder: z.enum(['banners', 'products', 'documents', 'blog', 'testimonials', 'legal', 'misc', 'brands', 'categories']).optional(),
   tags: z.array(z.string().max(40)).optional(),
 });
 adminContentRoutes.get(
@@ -157,7 +157,7 @@ adminContentRoutes.get(
   }),
 );
 const mimeEnum = z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'application/pdf', 'text/plain', 'application/octet-stream']);
-const folderEnum = z.enum(['banners', 'products', 'documents', 'blog', 'testimonials', 'legal', 'misc']);
+const folderEnum = z.enum(['banners', 'products', 'documents', 'blog', 'testimonials', 'legal', 'misc', 'brands', 'categories']);
 
 adminContentRoutes.post(
   '/media/presign',

@@ -8,7 +8,7 @@ interface InventoryRow {
   id: number;
   productVariantId: number;
   countryId: number;
-  variant: { variantSku: string; product: { title: string } };
+  variant: { variantSku: string; attributes: Record<string, unknown> | null; product: { title: string } };
   country: { countryCode: string; currencyCode: string };
   retailPrice: number | null;
   compareAtPrice: number | null;
@@ -62,6 +62,7 @@ interface VariantGroup {
   variantId: number;
   sku: string;
   title: string;
+  attributes: Record<string, unknown> | null;
   primary: InventoryRow;
   rows: InventoryRow[];
 }
@@ -102,6 +103,7 @@ export default function AdminInventory() {
         variantId: primary.productVariantId,
         sku: primary.variant.variantSku,
         title: primary.variant.product.title,
+        attributes: primary.variant.attributes,
         primary,
         rows: variantRows,
       };
@@ -124,7 +126,7 @@ export default function AdminInventory() {
       stockReserved: String(Number(group.primary.stockReserved ?? 0)),
       stockLowThreshold: String(Number(group.primary.stockLowThreshold ?? 5)),
       isAvailable: group.primary.isAvailable,
-      pricing: group.rows.map((r) => ({
+      pricing: [...group.rows].sort((a, b) => a.country.countryCode.localeCompare(b.country.countryCode)).map((r) => ({
         id: r.id,
         countryId: r.countryId,
         countryCode: r.country.countryCode,
@@ -264,7 +266,14 @@ export default function AdminInventory() {
               return (
                 <tr key={group.variantId} className="border-t border-gray-100 hover:bg-brand-blue/5">
                   <td className="p-4 font-semibold line-clamp-1">{group.title}</td>
-                  <td className="p-4 font-mono text-xs">{group.sku}</td>
+                  <td className="p-4">
+                    <div className="font-mono text-xs">{group.sku}</div>
+                    {group.attributes && Object.keys(group.attributes).length > 0 && (
+                      <div className="mt-0.5 text-[11px] text-brand-gray">
+                        {Object.entries(group.attributes).map(([k, v]) => `${k}: ${v}`).join(' · ')}
+                      </div>
+                    )}
+                  </td>
                   <td className={`p-4 text-right font-mono font-bold ${out ? 'text-status-error' : low ? 'text-status-warning' : ''}`}>
                     {available} / {stock}
                   </td>

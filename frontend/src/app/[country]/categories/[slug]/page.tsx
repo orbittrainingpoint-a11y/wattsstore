@@ -21,6 +21,7 @@ interface Category {
   name: string;
   slug: string;
   description: string | null;
+  bannerImageUrl: string | null;
   variantSpecificationSchema: FilterSpec[] | null;
   children: { id: number; name: string; slug: string }[];
 }
@@ -48,14 +49,16 @@ export default async function CategoryPage({
   const query = await searchParams;
   const currency = await resolveCurrency(region);
   const meta = getCategoryMeta(slug);
-  const [categoryBanners, siteSettings] = await Promise.all([loadBanners('category', region), loadSiteSettings()]);
+  const [[categoryBanners, siteSettings], cat] = await Promise.all([
+    Promise.all([loadBanners('category', region), loadSiteSettings()]),
+    api.get<Category>(`/catalog/categories/${slug}`, { country: region }).catch(() => null),
+  ]);
   const showPrice = regionShowsPrice(siteSettings, region);
   const categoryBanner = categoryBanners[0];
-  const categoryImage = categoryBanner?.imageUrl ?? '/img/banners/cms/hazardous-lighting.jpg';
-
-  // Resolve category
-  const cat = await api.get<Category>(`/catalog/categories/${slug}`, { country: region }).catch(() => null);
   const category = cat?.data ?? null;
+  // Priority: category's own banner → CMS placement banner → hardcoded fallback
+  const categoryImage = category?.bannerImageUrl ?? categoryBanner?.imageUrl ?? '/img/banners/cms/hazardous-lighting.jpg';
+
   const [relatedCategories, brands] = await Promise.all([
     api.get<CategoryNavItem[]>('/catalog/categories', { country: region }).then((res) => res.data).catch(() => []),
     api.get<ApiBrand[]>('/catalog/brands', { country: region }).then((res) => res.data).catch(() => []),

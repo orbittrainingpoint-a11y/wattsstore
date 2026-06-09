@@ -253,6 +253,7 @@ export default function AdminBannersPage() {
                 <span className="text-xs font-bold uppercase tracking-wider text-brand-gray">Mobile image URL <span className="font-normal lowercase text-brand-gray">(optional, defaults to image)</span></span>
                 <input className="input mt-1" placeholder="https://…" value={editor.mobileImageUrl ?? ''} onChange={(e) => setEditor({ ...editor, mobileImageUrl: e.target.value })} />
               </label>
+              <ImagePicker value={editor.mobileImageUrl ?? null} folder="banners" onSelect={(url) => setEditor({ ...editor, mobileImageUrl: url })} />
 
               <label className="block">
                 <span className="text-xs font-bold uppercase tracking-wider text-brand-gray">Eyebrow <span className="font-normal lowercase text-brand-gray">(small chip above title)</span></span>

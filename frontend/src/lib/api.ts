@@ -14,11 +14,25 @@ export interface ApiError extends Error {
   status: number;
 }
 
+// Deduplicate concurrent refresh attempts in the browser.
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefresh(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  if (!refreshPromise) {
+    refreshPromise = fetch('/api/v1/auth/refresh', { method: 'POST', credentials: 'include' })
+      .then((r) => r.ok)
+      .catch(() => false)
+      .finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise;
+}
+
 async function request<T>(
   path: string,
-  options: RequestInit & { country?: string } = {},
+  options: RequestInit & { country?: string; _retry?: boolean } = {},
 ): Promise<ApiResponse<T>> {
-  const { country, headers, ...rest } = options;
+  const { country, headers, _retry, ...rest } = options;
   const url = new URL(`${baseUrl()}${path}`, typeof window === 'undefined' ? SERVER_BASE : window.location.origin);
   if (country) url.searchParams.set('country', country);
 
@@ -29,6 +43,14 @@ async function request<T>(
     // RSC catalog calls can be cached briefly; mutations are POST and not cached.
     cache: rest.method && rest.method !== 'GET' ? 'no-store' : (rest.cache ?? 'no-store'),
   });
+
+  // On 401, silently refresh the access token and retry once.
+  if (res.status === 401 && !_retry && typeof window !== 'undefined') {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      return request<T>(path, { ...options, _retry: true });
+    }
+  }
 
   const json = (await res.json().catch(() => ({ success: false, error: { code: 'PARSE_ERROR', message: 'Invalid response' } }))) as ApiResponse<T>;
   if (!res.ok || !json.success) {
