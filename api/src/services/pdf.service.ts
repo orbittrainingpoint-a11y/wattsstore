@@ -79,6 +79,15 @@ export const pdfService = {
           invoiceUrl: publicUrl,
         },
       }, { throwOnQueueFailure: true });
+
+      // Mark the quote as sent — update status and record the timestamp.
+      await prisma.bulkQuote.update({
+        where: { id: quoteId },
+        data: { quoteStatus: 'invoice_sent', invoiceSentAt: new Date() },
+      });
+      await prisma.bulkQuoteStatusHistory.create({
+        data: { bulkQuoteId: quoteId, status: 'invoice_sent', note: 'Quotation PDF emailed to customer.' },
+      });
       return storedKey;
     } catch (error) {
       await prisma.bulkQuote.update({ where: { id: quoteId }, data: { quoteStatus: 'delivery_failed' } }).catch(() => undefined);

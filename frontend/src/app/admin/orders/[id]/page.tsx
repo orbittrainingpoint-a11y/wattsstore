@@ -45,6 +45,11 @@ export default function AdminOrderDetail({ params }: { params: Promise<{ id: str
     try { await api.put(`/admin/orders/${id}/status`, { status: newStatus, note: statusNote }); setMsg('Status updated'); load(); }
     catch (e) { setErr((e as Error).message); }
   }
+  async function verifyShipping() {
+    if (!confirm('Manually verify shipping address? Only do this if you are certain the address is correct.')) return;
+    try { await api.put(`/admin/orders/${id}/verify-shipping`, {}); setMsg('Shipping address verified'); load(); }
+    catch (e) { setErr((e as Error).message); }
+  }
   async function addShipment() {
     try { await api.post(`/admin/orders/${id}/shipment`, { carrier, trackingNumber: tracking }); setTracking(''); setMsg('Shipment added'); load(); }
     catch (e) { setErr((e as Error).message); }
@@ -75,7 +80,9 @@ export default function AdminOrderDetail({ params }: { params: Promise<{ id: str
       {msg && <div className="card p-3 mb-4 text-sm rounded-lg bg-status-success/10 text-status-success">✓ {msg}</div>}
       {!order.isShippingVerified && (
         <div className="card p-4 mb-4 text-sm flex items-center gap-3 border-status-warning/40 bg-status-warning/5">
-          <span className="text-xl">⚠</span><span className="text-status-warning font-semibold">Shipping address not verified — fulfillment is locked until the customer confirms.</span>
+          <span className="text-xl">⚠</span>
+          <span className="text-status-warning font-semibold flex-1">Shipping address not verified — customer hasn&apos;t clicked the verification email yet.</span>
+          <button className="btn-outline btn-sm shrink-0" onClick={verifyShipping}>Manually verify</button>
         </div>
       )}
 

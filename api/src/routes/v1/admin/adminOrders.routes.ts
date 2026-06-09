@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../../config/database';
 import { orderService } from '../../../services/order.service';
+import { orderRepository } from '../../../repositories/order.repository';
 import { salesQuoteService } from '../../../services/salesQuote.service';
 import { validate } from '../../../middlewares/validate.middleware';
 import { asyncHandler } from '../../../utils/asyncHandler';
@@ -83,6 +84,26 @@ adminOrdersRoutes.post(
   asyncHandler(async (req, res) =>
     ok(res, await orderService.addShipment(Number(req.params.id), { carrier: req.body.carrier, trackingNumber: req.body.trackingNumber, estimatedDelivery: req.body.estimatedDelivery ? new Date(req.body.estimatedDelivery) : undefined }, req.user!.id)),
   ),
+);
+
+// Admin manual override: mark shipping address as verified (bypasses customer email link).
+// Required when email delivery is broken or the admin knows the address is correct.
+adminOrdersRoutes.put(
+  '/orders/:id/verify-shipping',
+  asyncHandler(async (req, res) => {
+    const orderId = Number(req.params.id);
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw AppError.notFound('ORDER_NOT_FOUND', 'Order not found.');
+    const updated = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        isShippingVerified: true,
+        status: order.status === 'paid' ? 'verified' : order.status,
+      },
+    });
+    await orderRepository.addStatusHistory(orderId, 'verified', 'Shipping address manually verified by admin', req.user!.id);
+    return ok(res, updated);
+  }),
 );
 
 adminOrdersRoutes.post(
